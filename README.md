@@ -36,14 +36,19 @@ flutter build apk --release
 
 本项目配置了 GitHub Actions 自动构建：
 
-- **推送代码** → 自动构建和测试
-- **创建标签** → 自动发布到 Releases
+- **推送代码** → 快速测试验证（代码分析 + 单元测试）
+- **创建标签** → 完整构建和发布到 Releases  
 - **手动触发** → 可选择构建平台
 
-### 发布新版本：
+### 开发流程：
 
 ```bash
-# 创建并推送标签
+# 1. 日常开发（触发快速测试）
+git add .
+git commit -m "feat: 添加新功能"
+git push origin main
+
+# 2. 发布新版本（触发完整构建）
 git tag v1.0.0
 git push origin v1.0.0
 ```

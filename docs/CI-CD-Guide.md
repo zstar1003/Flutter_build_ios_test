@@ -4,43 +4,58 @@
 
 ## 🔧 配置的 Workflows
 
-### 1. iOS 专用构建 (`.github/workflows/ios-build.yml`)
-- **触发条件**: 推送到主分支、创建标签、手动触发
+### 1. 开发测试 (`.github/workflows/dev-test.yml`)
+- **触发条件**: 推送到主分支、Pull Request  
+- **功能**: 代码分析 + 单元测试
+- **运行环境**: ubuntu-latest
+- **用途**: 日常开发验证
+
+### 2. iOS 专用构建 (`.github/workflows/ios-build.yml`)
+- **触发条件**: 创建标签、手动触发
 - **构建产物**: `.ipa` 文件
 - **运行环境**: macOS-latest
 
-### 2. Android 专用构建 (`.github/workflows/android-build.yml`)
-- **触发条件**: 推送到主分支、创建标签、手动触发
+### 3. Android 专用构建 (`.github/workflows/android-build.yml`)
+- **触发条件**: 创建标签、手动触发
 - **构建产物**: Debug/Release `.apk` 文件 + `.aab` 文件
 - **运行环境**: ubuntu-latest
 
-### 3. 多平台构建 (`.github/workflows/multi-platform-build.yml`) **[推荐]**
+### 4. 多平台构建 (`.github/workflows/multi-platform-build.yml`) **[推荐发布]**
 - **触发条件**: 创建标签、手动触发
 - **构建产物**: iOS `.ipa` + Android `.apk` 同时构建
 - **运行环境**: macOS + Ubuntu 并行
 
 ## 🚀 如何使用
 
-### 方法 1: 自动发布（推荐）
+### 方法 1: 开发测试流程（日常开发）
 
 ```bash
-# 1. 完成代码开发
+# 1. 日常开发推送（触发快速测试）
 git add .
 git commit -m "feat: 添加新功能"
 git push origin main
 
-# 2. 创建版本标签
+# GitHub Actions 会自动:
+# - 运行代码分析 (flutter analyze)
+# - 执行单元测试 (flutter test)
+# - 验证代码质量
+```
+
+### 方法 2: 发布流程（版本发布）
+
+```bash
+# 1. 创建版本标签（触发完整构建）
 git tag v1.0.0
 git push origin v1.0.0
 
-# 3. 自动触发构建和发布
+# 2. 自动触发构建和发布
 # GitHub Actions 会自动:
 # - 构建 iOS 和 Android 版本
 # - 创建 GitHub Release
 # - 上传安装包文件
 ```
 
-### 方法 2: 手动触发构建
+### 方法 3: 手动触发构建
 
 1. 进入 GitHub 仓库页面
 2. 点击 **Actions** 标签
@@ -140,10 +155,20 @@ version: 1.0.0+1
 
 ## 🎯 最佳实践
 
-1. **使用语义化版本标签**: `v1.0.0`, `v1.1.0`, `v2.0.0`
-2. **为每个版本写详细的更新日志**
-3. **在发布前进行充分测试**
-4. **定期清理旧的 Artifacts**
+### 开发流程:
+1. **日常开发**: 频繁推送代码，依赖快速测试验证
+2. **功能完成**: 确保所有测试通过后再考虑发布
+3. **版本发布**: 使用语义化版本标签 `v1.0.0`, `v1.1.0`, `v2.0.0`
+
+### 版本管理:
+1. **为每个版本写详细的更新日志**
+2. **在发布前进行充分测试**
+3. **定期清理旧的 Artifacts**
+
+### CI/CD 优化:
+1. **推送代码时只运行快速测试** (节省资源)
+2. **标签发布时构建完整应用包** (保证质量)
+3. **合理使用手动触发** (特殊情况下的灵活构建)
 
 ---
 

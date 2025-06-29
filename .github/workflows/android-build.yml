@@ -1,9 +1,8 @@
 name: Build and Release Android App
 
 on:
-  # 推送代码时触发
+  # 仅在创建版本标签时触发
   push:
-    branches: [ main, master ]
     tags:
       - 'v*'
   # 允许手动触发
