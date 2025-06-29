@@ -1,0 +1,125 @@
+name: Build and Release Android App
+
+on:
+  # 推送代码时触发
+  push:
+    branches: [ main, master ]
+  # 创建标签时触发（用于正式发布）
+  push:
+    tags:
+      - 'v*'
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: 🐣 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        
+    - name: 📋 Flutter Doctor
+      run: flutter doctor -v
+      
+    - name: 📦 Get Dependencies
+      run: flutter pub get
+      
+    - name: 🧪 Run Tests
+      run: flutter test
+      
+    - name: 🧹 Clean Build
+      run: flutter clean
+      
+    - name: 🔨 Build Android APK (Debug)
+      run: flutter build apk --debug
+      
+    - name: 🔨 Build Android APK (Release)
+      run: flutter build apk --release
+      
+    - name: 🔨 Build Android App Bundle (Release)
+      run: flutter build appbundle --release
+      
+    - name: 📁 Rename APK Files
+      run: |
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        cd build/app/outputs/flutter-apk/
+        mv app-debug.apk "FlutterApp_debug_${TIMESTAMP}_${COMMIT_SHORT}.apk"
+        mv app-release.apk "FlutterApp_release_${TIMESTAMP}_${COMMIT_SHORT}.apk"
+        ls -la *.apk
+        echo "DEBUG_APK=FlutterApp_debug_${TIMESTAMP}_${COMMIT_SHORT}.apk" >> $GITHUB_ENV
+        echo "RELEASE_APK=FlutterApp_release_${TIMESTAMP}_${COMMIT_SHORT}.apk" >> $GITHUB_ENV
+        
+    - name: 📁 Rename AAB File
+      run: |
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        cd build/app/outputs/bundle/release/
+        mv app-release.aab "FlutterApp_release_${TIMESTAMP}_${COMMIT_SHORT}.aab"
+        ls -la *.aab
+        echo "RELEASE_AAB=FlutterApp_release_${TIMESTAMP}_${COMMIT_SHORT}.aab" >> $GITHUB_ENV
+        
+    - name: 📤 Upload APK as Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-APKs-${{ github.run_number }}
+        path: |
+          build/app/outputs/flutter-apk/${{ env.DEBUG_APK }}
+          build/app/outputs/flutter-apk/${{ env.RELEASE_APK }}
+        retention-days: 30
+        
+    - name: 📤 Upload AAB as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-AAB-${{ github.run_number }}
+        path: build/app/outputs/bundle/release/${{ env.RELEASE_AAB }}
+        retention-days: 30
+        
+    - name: 🎉 Create GitHub Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/app/outputs/flutter-apk/${{ env.DEBUG_APK }}
+          build/app/outputs/flutter-apk/${{ env.RELEASE_APK }}
+          build/app/outputs/bundle/release/${{ env.RELEASE_AAB }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          🤖 **Android App Release ${{ github.ref_name }}**
+          
+          📱 **安装方法:**
+          - **调试版 (Debug APK)**: 直接安装，支持调试
+          - **发布版 (Release APK)**: 直接安装，性能最优
+          - **应用包 (AAB)**: 用于 Google Play Store 发布
+          
+          📋 **版本信息:**
+          - 构建时间: ${{ github.run_number }}
+          - 提交: ${{ github.sha }}
+          
+          💡 **提示:** 
+          - APK 文件可以直接安装到 Android 设备
+          - 需要在设置中允许"未知来源"应用安装
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 💬 Build Summary
+      run: |
+        echo "✅ Android 构建完成!"
+        echo "📦 Debug APK: ${{ env.DEBUG_APK }}"
+        echo "📦 Release APK: ${{ env.RELEASE_APK }}"
+        echo "📦 Release AAB: ${{ env.RELEASE_AAB }}" 

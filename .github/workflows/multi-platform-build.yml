@@ -1,0 +1,167 @@
+name: Multi-Platform Build & Release
+
+on:
+  # 创建标签时触发正式发布
+  push:
+    tags:
+      - 'v*'
+  # 允许手动触发
+  workflow_dispatch:
+    inputs:
+      build_ios:
+        description: 'Build iOS'
+        required: true
+        default: true
+        type: boolean
+      build_android:
+        description: 'Build Android'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  # iOS 构建任务
+  build-ios:
+    if: ${{ inputs.build_ios != false }}
+    runs-on: macos-latest
+    
+    steps:
+    - name: 🔄 Checkout
+      uses: actions/checkout@v4
+      
+    - name: 🐣 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        
+    - name: 📦 Dependencies
+      run: flutter pub get
+      
+    - name: 🧪 Tests
+      run: flutter test
+      
+    - name: 🔨 Build iOS
+      run: |
+        flutter clean
+        flutter build ios --release --no-codesign
+        
+    - name: 📱 Create IPA
+      run: |
+        cd build/ios/iphoneos
+        mkdir -p Payload
+        cp -R Runner.app Payload/
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        zip -r "FlutterApp_iOS_${TIMESTAMP}_${COMMIT_SHORT}.ipa" Payload/
+        echo "IPA_NAME=FlutterApp_iOS_${TIMESTAMP}_${COMMIT_SHORT}.ipa" >> $GITHUB_ENV
+        
+    - name: 📤 Upload iOS Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: iOS-Build
+        path: build/ios/iphoneos/${{ env.IPA_NAME }}
+        retention-days: 30
+
+  # Android 构建任务
+  build-android:
+    if: ${{ inputs.build_android != false }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout
+      uses: actions/checkout@v4
+      
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: 🐣 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        
+    - name: 📦 Dependencies
+      run: flutter pub get
+      
+    - name: 🧪 Tests
+      run: flutter test
+      
+    - name: 🔨 Build Android
+      run: |
+        flutter clean
+        flutter build apk --release
+        
+    - name: 📱 Rename APK
+      run: |
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        cd build/app/outputs/flutter-apk/
+        mv app-release.apk "FlutterApp_Android_${TIMESTAMP}_${COMMIT_SHORT}.apk"
+        echo "APK_NAME=FlutterApp_Android_${TIMESTAMP}_${COMMIT_SHORT}.apk" >> $GITHUB_ENV
+        
+    - name: 📤 Upload Android Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-Build
+        path: build/app/outputs/flutter-apk/${{ env.APK_NAME }}
+        retention-days: 30
+
+  # 发布任务 - 依赖于构建任务完成
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-ios, build-android]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Download iOS Artifact
+      if: ${{ inputs.build_ios != false }}
+      uses: actions/download-artifact@v4
+      with:
+        name: iOS-Build
+        path: ./release-files/
+        
+    - name: 📥 Download Android Artifact
+      if: ${{ inputs.build_android != false }}
+      uses: actions/download-artifact@v4
+      with:
+        name: Android-Build
+        path: ./release-files/
+        
+    - name: 🎉 Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./release-files/*
+        name: 🚀 Release ${{ github.ref_name }}
+        body: |
+          ## 🎉 Flutter App Release ${{ github.ref_name }}
+          
+          ### 📱 iOS 安装方法:
+          1. 下载 `.ipa` 文件到电脑
+          2. 使用 **Sideloadly** 连接 iPhone 安装
+          3. 在 iPhone 设置 → 通用 → VPN与设备管理 → 信任开发者
+          
+          ### 🤖 Android 安装方法:
+          1. 下载 `.apk` 文件到手机
+          2. 允许"未知来源"应用安装
+          3. 直接安装 APK 文件
+          
+          ### 🔧 版本信息:
+          - 构建时间: ${{ github.run_number }}
+          - 提交哈希: ${{ github.sha }}
+          - Flutter 版本: 3.32.5
+          
+          ### ⚠️ 注意事项:
+          - **iOS**: 免费开发者账号安装的应用有效期7天
+          - **Android**: 需要开启"允许安装未知应用"选项
+          
+          ---
+          
+          🎯 **快速开始**: 选择对应平台的文件下载安装即可！
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

@@ -1,0 +1,93 @@
+name: Build and Release iOS App
+
+on:
+  # 推送代码时触发
+  push:
+    branches: [ main, master ]
+  # 创建标签时触发（用于正式发布）
+  push:
+    tags:
+      - 'v*'
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: 🔄 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐣 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        
+    - name: 📋 Flutter Doctor
+      run: flutter doctor -v
+      
+    - name: 📦 Get Dependencies
+      run: flutter pub get
+      
+    - name: 🧪 Run Tests
+      run: flutter test
+      
+    - name: 🧹 Clean Build
+      run: flutter clean
+      
+    - name: 🔨 Build iOS Release (No Codesign)
+      run: |
+        flutter build ios --release --no-codesign
+        
+    - name: 📱 Create IPA File
+      run: |
+        cd build/ios/iphoneos
+        mkdir -p Payload
+        cp -R Runner.app Payload/
+        # 使用时间戳和提交hash创建唯一文件名
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        zip -r "FlutterApp_${TIMESTAMP}_${COMMIT_SHORT}.ipa" Payload/
+        ls -la *.ipa
+        echo "IPA_NAME=FlutterApp_${TIMESTAMP}_${COMMIT_SHORT}.ipa" >> $GITHUB_ENV
+        
+    - name: 📤 Upload IPA as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: iOS-App-${{ github.run_number }}
+        path: build/ios/iphoneos/${{ env.IPA_NAME }}
+        retention-days: 30
+        
+    - name: 🎉 Create GitHub Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/ios/iphoneos/${{ env.IPA_NAME }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          🚀 **iOS App Release ${{ github.ref_name }}**
+          
+          📱 **安装方法:**
+          1. 下载 .ipa 文件到电脑
+          2. 使用 Sideloadly 连接 iPhone 安装
+          3. 或上传到 iCloud Drive，在 iPhone 上下载后安装
+          
+          📋 **版本信息:**
+          - 构建时间: ${{ github.run_number }}
+          - 提交: ${{ github.sha }}
+          
+          ⚠️ **注意:** 
+          - 免费开发者账号安装的应用有效期7天
+          - 需要在iPhone设置中信任开发者证书
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 💬 Build Summary
+      run: |
+        echo "✅ iOS 构建完成!"
+        echo "📦 IPA 文件: ${{ env.IPA_NAME }}"
+        echo "📱 可以下载并使用 Sideloadly 安装到 iPhone" 
