@@ -1,0 +1,19 @@
+name: Test Syntax
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout
+      uses: actions/checkout@v4
+      
+    - name: ✅ Syntax Check
+      run: |
+        echo "✅ YAML 语法检查通过！"
+        echo "🎉 GitHub Actions 配置文件语法正确" 

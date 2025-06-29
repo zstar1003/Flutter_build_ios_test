@@ -4,8 +4,6 @@ on:
   # 推送代码时触发
   push:
     branches: [ main, master ]
-  # 创建标签时触发（用于正式发布）
-  push:
     tags:
       - 'v*'
   # 允许手动触发

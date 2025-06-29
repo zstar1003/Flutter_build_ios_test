@@ -22,7 +22,7 @@ on:
 jobs:
   # iOS 构建任务
   build-ios:
-    if: ${{ inputs.build_ios != false }}
+    if: ${{ inputs.build_ios != false || github.event_name != 'workflow_dispatch' }}
     runs-on: macos-latest
     
     steps:
@@ -65,7 +65,7 @@ jobs:
 
   # Android 构建任务
   build-android:
-    if: ${{ inputs.build_android != false }}
+    if: ${{ inputs.build_android != false || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     
     steps:
@@ -118,14 +118,14 @@ jobs:
     
     steps:
     - name: 📥 Download iOS Artifact
-      if: ${{ inputs.build_ios != false }}
+      if: ${{ always() && (inputs.build_ios != false || github.event_name != 'workflow_dispatch') }}
       uses: actions/download-artifact@v4
       with:
         name: iOS-Build
         path: ./release-files/
         
     - name: 📥 Download Android Artifact
-      if: ${{ inputs.build_android != false }}
+      if: ${{ always() && (inputs.build_android != false || github.event_name != 'workflow_dispatch') }}
       uses: actions/download-artifact@v4
       with:
         name: Android-Build
