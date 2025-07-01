@@ -111,19 +111,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       body: Consumer<QuoteProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading && provider.currentQuote == null) {
+          // 只在真正的初始加载时显示加载状态
+          if (provider.isLoading && provider.currentQuote == null && provider.characters.isEmpty) {
             return _buildLoadingState();
           }
 
-          if (provider.error != null && provider.currentQuote == null) {
+          // 只在真正的错误且没有任何数据时显示错误状态
+          if (provider.error != null && provider.currentQuote == null && provider.characters.isEmpty) {
             return _buildErrorState(provider);
           }
 
+          // 确定要显示的角色 - 优先使用当前角色
+          final displayCharacter = provider.currentCharacter ?? 
+                                   provider.currentQuote?.character ?? 
+                                   (provider.characters.isNotEmpty ? provider.characters.first : null);
+
+          // 确定要显示的金句 - 始终确保有金句显示
+          final displayQuote = provider.currentQuote ?? 
+                               (displayCharacter != null ? Quote(
+                                 text: displayCharacter.quotes.isNotEmpty ? displayCharacter.quotes.first : "欢迎来到明日方舟世界",
+                                 author: displayCharacter.name,
+                                 character: displayCharacter,
+                                 tags: ['默认'],
+                                 date: DateTime.now(),
+                               ) : null);
+
           return Stack(
             children: [
-              // 角色立绘背景
-              if (provider.currentCharacter != null)
-                _buildCharacterBackground(provider.currentCharacter!, MediaQuery.of(context).size),
+              // 总是显示背景 - 避免白屏
+              _buildDefaultBackground(),
+              
+              // 角色立绘背景（如果有角色数据）
+              if (displayCharacter != null)
+                _buildCharacterBackground(displayCharacter, MediaQuery.of(context).size),
               
               // 渐变遮罩
               _buildGradientOverlay(),
@@ -131,16 +151,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // 粒子效果
               _buildParticleSystem(),
               
-              // 金句内容
-              if (provider.currentQuote != null && provider.currentCharacter != null)
-                _buildMainContent(context, provider.currentQuote, provider.currentCharacter!, MediaQuery.of(context).size),
+              // 金句内容 - 始终显示
+              if (displayQuote != null)
+                _buildMainContent(context, displayQuote, displayCharacter, MediaQuery.of(context).size),
               
               // 角色信息（左上角）
-              if (provider.currentCharacter != null)
+              if (displayCharacter != null)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 16,
                   left: 0,
-                  child: _buildCharacterInfo(provider.currentCharacter),
+                  child: _buildCharacterInfo(displayCharacter),
                 ),
               
               // 控制按钮
@@ -152,6 +172,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // 添加默认背景，确保不会白屏
+  Widget _buildDefaultBackground() {
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1a1a2e),
+              const Color(0xFF16213e),
+              const Color(0xFF0f3460),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -259,7 +298,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildMainContent(BuildContext context, Quote? currentQuote, Character character, Size size) {
+  Widget _buildMainContent(BuildContext context, Quote? currentQuote, Character? character, Size size) {
+    if (currentQuote == null) return Container();
+    
     return SafeArea(
       child: AnimatedBuilder(
         animation: _characterAnimation,
@@ -269,17 +310,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Center(
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: size.width * 0.3, // 往右移动更多
+                  left: size.width * 0.4, // 更靠右一些
                   right: 24.0,
                   top: 24.0,
                   bottom: 120.0, // 为底部按钮留出空间
                 ),
-                child: currentQuote != null
-                    ? Transform.scale(
-                        scale: 0.9, // 缩小到0.9倍
-                        child: QuoteDisplay(quote: currentQuote),
-                      )
-                    : Container(),
+                child: Transform.scale(
+                  scale: 1.3, // 放大到1.3倍
+                  child: QuoteDisplay(quote: currentQuote),
+                ),
               ),
             ),
           );
@@ -425,11 +464,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: Center(
           child: CharacterSelector(
             onCharacterSelected: (character) {
-              final provider = Provider.of<QuoteProvider>(context, listen: false);
-              provider.setCharacter(character);
-              _characterController.reset();
-              _characterController.forward();
-              _toggleCharacterSelector();
+              // 使用microtask确保状态更新的正确顺序
+              Future.microtask(() {
+                final provider = Provider.of<QuoteProvider>(context, listen: false);
+                
+                // 先关闭选择器
+                if (mounted) {
+                  setState(() {
+                    _showCharacterSelector = false;
+                  });
+                }
+                
+                // 设置新角色
+                provider.setCharacter(character);
+                
+                // 重置并启动动画
+                _characterController.reset();
+                _characterController.forward();
+                
+                HapticFeedback.lightImpact();
+              });
             },
           ),
         ),

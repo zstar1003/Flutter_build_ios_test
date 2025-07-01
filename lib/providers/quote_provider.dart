@@ -112,7 +112,13 @@ class QuoteProvider extends ChangeNotifier {
 
   // 设置当前角色
   void setCharacter(Character character) {
+    // 清除错误状态
+    _error = null;
+    _isLoading = false;
+    
+    // 更新角色
     _currentCharacter = character;
+    
     // 获取该角色的随机金句
     final quoteText = character.quotes[Random().nextInt(character.quotes.length)];
     final quote = Quote(
@@ -122,8 +128,12 @@ class QuoteProvider extends ChangeNotifier {
       tags: ['角色', '明日方舟', character.profession],
       date: DateTime.now(),
     );
+    
+    // 更新当前金句
     _currentQuote = quote;
     _addToRecentQuotes(quote);
+    
+    // 通知监听器
     notifyListeners();
   }
 

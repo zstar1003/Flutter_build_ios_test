@@ -15,12 +15,14 @@ class QuoteDisplay extends StatelessWidget {
       return _buildPlaceholder();
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Container(
       constraints: BoxConstraints(
-        maxWidth: 400,
-        maxHeight: 300,
+        maxWidth: screenWidth * 0.5, // 占屏幕宽度的一半
+        maxHeight: 350,
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.7), // 半透明黑色背景
         borderRadius: BorderRadius.circular(20),
@@ -50,7 +52,7 @@ class QuoteDisplay extends StatelessWidget {
             quote!.text,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 22, // 稍微增大字体
               fontWeight: FontWeight.w600,
               height: 1.4,
               letterSpacing: 0.5,
@@ -62,7 +64,7 @@ class QuoteDisplay extends StatelessWidget {
           
           // 分割线
           Container(
-            width: 50,
+            width: 60,
             height: 2,
             decoration: BoxDecoration(
               color: _getRarityColor(quote!.character?.rarity ?? '1'),
@@ -77,7 +79,7 @@ class QuoteDisplay extends StatelessWidget {
             '— ${quote!.author}',
             style: TextStyle(
               color: _getRarityColor(quote!.character?.rarity ?? '1').withOpacity(0.9),
-              fontSize: 16,
+              fontSize: 18, // 增大作者字体
               fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
             ),
@@ -90,10 +92,10 @@ class QuoteDisplay extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       constraints: BoxConstraints(
-        maxWidth: 400,
-        maxHeight: 300,
+        maxWidth: 500, // 固定大小
+        maxHeight: 350,
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.7),
         borderRadius: BorderRadius.circular(20),
