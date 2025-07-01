@@ -358,25 +358,6 @@ class _CharacterSelectorState extends State<CharacterSelector>
   }
 
   IconData _getProfessionIcon(String profession) {
-    switch (profession.toUpperCase()) {
-      case 'GUARD':
-        return Icons.security;
-      case 'SNIPER':
-        return Icons.my_location;
-      case 'DEFENDER':
-        return Icons.shield;
-      case 'MEDIC':
-        return Icons.local_hospital;
-      case 'SUPPORTER':
-        return Icons.support_agent;
-      case 'CASTER':
-        return Icons.auto_fix_high;
-      case 'SPECIALIST':
-        return Icons.build_circle;
-      case 'VANGUARD':
-        return Icons.directions_run;
-      default:
-        return Icons.person;
-    }
+      return Icons.person;
   }
 } 
