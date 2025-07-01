@@ -269,14 +269,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Center(
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: size.width * 0.25, // 往右移动
+                  left: size.width * 0.3, // 往右移动更多
                   right: 24.0,
                   top: 24.0,
                   bottom: 120.0, // 为底部按钮留出空间
                 ),
                 child: currentQuote != null
                     ? Transform.scale(
-                        scale: 1.2, // 放大1.2倍
+                        scale: 0.9, // 缩小到0.9倍
                         child: QuoteDisplay(quote: currentQuote),
                       )
                     : Container(),
@@ -425,7 +425,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: Center(
           child: CharacterSelector(
             onCharacterSelected: (character) {
-              _selectCharacter(character.name);
+              final provider = Provider.of<QuoteProvider>(context, listen: false);
+              provider.setCharacter(character);
+              _characterController.reset();
+              _characterController.forward();
               _toggleCharacterSelector();
             },
           ),

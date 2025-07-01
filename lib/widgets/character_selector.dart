@@ -128,7 +128,7 @@ class _CharacterSelectorState extends State<CharacterSelector>
           const SizedBox(width: 16),
           const Expanded(
             child: Text(
-              '选择角色',
+              '选择干员',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -169,10 +169,10 @@ class _CharacterSelectorState extends State<CharacterSelector>
           padding: const EdgeInsets.all(24),
           child: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-              childAspectRatio: 0.75,
+              crossAxisCount: 5, // 5列
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
             ),
             itemCount: characters.length,
             itemBuilder: (context, index) {
