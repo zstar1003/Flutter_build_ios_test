@@ -7,10 +7,12 @@ import '../theme/app_theme.dart';
 
 class CharacterSelector extends StatefulWidget {
   final Function(Character) onCharacterSelected;
+  final VoidCallback? onClose;
 
   const CharacterSelector({
     super.key,
     required this.onCharacterSelected,
+    this.onClose,
   });
 
   @override
@@ -139,7 +141,7 @@ class _CharacterSelectorState extends State<CharacterSelector>
           GestureDetector(
             onTap: () {
               _animationController.reverse().then((_) {
-                Navigator.pop(context);
+                widget.onClose?.call();
               });
             },
             child: Container(

@@ -485,6 +485,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 HapticFeedback.lightImpact();
               });
             },
+            onClose: () {
+              // 关闭选择器的回调
+              if (mounted) {
+                setState(() {
+                  _showCharacterSelector = false;
+                });
+              }
+            },
           ),
         ),
       ),
