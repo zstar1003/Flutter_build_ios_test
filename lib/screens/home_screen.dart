@@ -8,6 +8,8 @@ import '../providers/quote_provider.dart';
 import '../models/quote.dart';
 import '../theme/app_theme.dart';
 import '../widgets/character_selector.dart';
+import '../widgets/quote_display.dart';
+import '../widgets/character_display.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _quoteAnimation;
   late Animation<double> _characterAnimation;
   bool _showCharacterSelector = false;
+
+  final List<Particle> _particles = [];
+  static const int _particleCount = 20;
 
   @override
   void initState() {
@@ -73,6 +78,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     _quoteController.forward();
     _characterController.forward();
+    
+    // 初始化粒子
+    _initializeParticles();
+  }
+
+  void _initializeParticles() {
+    final random = math.Random();
+    _particles.clear();
+    
+    for (int i = 0; i < _particleCount; i++) {
+      _particles.add(Particle(
+        x: random.nextDouble(),
+        y: random.nextDouble(),
+        size: random.nextDouble() * 3 + 1,
+        speed: random.nextDouble() * 0.5 + 0.1,
+        opacity: random.nextDouble() * 0.3 + 0.1,
+      ));
+    }
   }
 
   @override
@@ -99,22 +122,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return Stack(
             children: [
               // 角色立绘背景
-              _buildCharacterBackground(provider.currentCharacter),
+              if (provider.currentCharacter != null)
+                _buildCharacterBackground(provider.currentCharacter!, MediaQuery.of(context).size),
               
               // 渐变遮罩
               _buildGradientOverlay(),
               
               // 粒子效果
-              _buildParticleEffect(),
+              _buildParticleSystem(),
               
               // 金句内容
-              _buildQuoteContent(provider.currentQuote),
+              if (provider.currentQuote != null && provider.currentCharacter != null)
+                _buildMainContent(context, provider.currentQuote, provider.currentCharacter!, MediaQuery.of(context).size),
               
-              // 角色信息
-              _buildCharacterInfo(provider.currentCharacter),
+              // 角色信息（左上角）
+              if (provider.currentCharacter != null)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  left: 0,
+                  child: _buildCharacterInfo(provider.currentCharacter),
+                ),
               
               // 控制按钮
-              _buildControlButtons(),
+              _buildControlButtons(context),
               
               // 角色选择器
               if (_showCharacterSelector)
@@ -126,217 +156,130 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCharacterBackground(Character? character) {
-    if (character == null) return Container();
-
-    return AnimatedBuilder(
-      animation: _characterAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: 0.9 + (_characterAnimation.value * 0.1),
-          child: Opacity(
-            opacity: _characterAnimation.value,
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              child: CachedNetworkImage(
-                imageUrl: character.illustrationUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        _getRarityColor(character.rarity).withOpacity(0.3),
-                        _getRarityColor(character.rarity).withOpacity(0.1),
-                        Colors.black.withOpacity(0.8),
-                      ],
-                    ),
-                  ),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: _getRarityColor(character.rarity),
-                    ),
+  Widget _buildCharacterBackground(Character character, Size size) {
+    return Stack(
+      children: [
+        // 背景图片
+        Positioned.fill(
+          child: Image.asset(
+            character.backgroundUrl ?? character.illustrationUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF1a1a2e),
+                      const Color(0xFF16213e),
+                      const Color(0xFF0f3460),
+                    ],
                   ),
                 ),
-                errorWidget: (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        _getRarityColor(character.rarity).withOpacity(0.4),
-                        _getRarityColor(character.rarity).withOpacity(0.2),
-                        Colors.black.withOpacity(0.9),
-                      ],
-                    ),
-                  ),
+              );
+            },
+          ),
+        ),
+        
+        // 角色立绘（左边部分）
+        Positioned(
+          left: -50,
+          top: 0,
+          bottom: 0,
+          width: size.width * 0.6,
+          child: ClipRect(
+            child: Image.asset(
+              character.illustrationUrl,
+              fit: BoxFit.cover,
+              alignment: Alignment.centerLeft,
+              errorBuilder: (context, error, stackTrace) {
+                print('角色立绘加载失败: ${character.illustrationUrl}');
+                print('错误: $error');
+                return Container(
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           _getProfessionIcon(character.profession),
-                          size: 120,
-                          color: _getRarityColor(character.rarity).withOpacity(0.8),
+                          size: 80,
+                          color: _getRarityColor(character.rarity).withOpacity(0.6),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         Text(
                           character.codename,
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
+                            color: Colors.white70,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
   Widget _buildGradientOverlay() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.3),
-            Colors.black.withOpacity(0.1),
-            Colors.black.withOpacity(0.2),
-            Colors.black.withOpacity(0.6),
-          ],
-          stops: const [0.0, 0.3, 0.7, 1.0],
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.1),
+              Colors.black.withOpacity(0.4),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildParticleEffect() {
-    return AnimatedBuilder(
-      animation: _particleAnimation,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: ParticleEffectPainter(
-            progress: _particleAnimation.value,
-            screenSize: MediaQuery.of(context).size,
-          ),
-          size: Size.infinite,
-        );
-      },
+  Widget _buildParticleSystem() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: ParticlePainter(_particles, _particleController.value),
+            size: MediaQuery.of(context).size,
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildQuoteContent(Quote? quote) {
-    if (quote == null) return Container();
-
+  Widget _buildMainContent(BuildContext context, Quote? currentQuote, Character character, Size size) {
     return SafeArea(
       child: AnimatedBuilder(
-        animation: _quoteAnimation,
+        animation: _characterAnimation,
         builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, 50 * (1 - _quoteAnimation.value)),
-            child: Opacity(
-              opacity: _quoteAnimation.value,
-              child: Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.black.withOpacity(0.5),
-                        Colors.black.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: _getRarityColor(quote.character?.rarity ?? '1').withOpacity(0.6),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15),
-                      ),
-                      BoxShadow(
-                        color: _getRarityColor(quote.character?.rarity ?? '1').withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 0),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 引用符号
-                      Icon(
-                        Icons.format_quote,
-                        size: 48,
-                        color: _getRarityColor(quote.character?.rarity ?? '1').withOpacity(0.8),
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // 金句内容
-                      Text(
-                        quote.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                          letterSpacing: 1.0,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // 作者分割线
-                      Container(
-                        width: 60,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _getRarityColor(quote.character?.rarity ?? '1'),
-                              _getRarityColor(quote.character?.rarity ?? '1').withOpacity(0.3),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // 作者信息
-                      Text(
-                        '— ${quote.author}',
-                        style: TextStyle(
-                          color: _getRarityColor(quote.character?.rarity ?? '1').withOpacity(0.9),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
+          return Opacity(
+            opacity: _characterAnimation.value.clamp(0.0, 1.0),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: size.width * 0.25, // 往右移动
+                  right: 24.0,
+                  top: 24.0,
+                  bottom: 120.0, // 为底部按钮留出空间
                 ),
+                child: currentQuote != null
+                    ? Transform.scale(
+                        scale: 1.2, // 放大1.2倍
+                        child: QuoteDisplay(quote: currentQuote),
+                      )
+                    : Container(),
               ),
             ),
           );
@@ -348,90 +291,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildCharacterInfo(Character? character) {
     if (character == null) return Container();
 
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 24,
-      child: AnimatedBuilder(
-        animation: _characterAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(-50 * (1 - _characterAnimation.value), 0),
-            child: Opacity(
-              opacity: _characterAnimation.value,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.8),
-                      Colors.black.withOpacity(0.6),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _getRarityColor(character.rarity).withOpacity(0.6),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 职业图标
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getRarityColor(character.rarity).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        _getProfessionIcon(character.profession),
-                        color: _getRarityColor(character.rarity),
-                        size: 20,
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 代号
-                        Text(
-                          character.codename,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 2),
-                        
-                        // 星级
-                        Row(
-                          children: List.generate(
-                            int.parse(character.rarity),
-                            (index) => Icon(
-                              Icons.star,
-                              color: _getRarityColor(character.rarity),
-                              size: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+    return Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _getRarityColor(character.rarity),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getProfessionIcon(character.profession),
+            color: _getRarityColor(character.rarity),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            character.name,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: _getRarityColor(character.rarity),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${character.rarity}★',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildControlButtons() {
+  Widget _buildControlButtons(BuildContext context) {
     return Positioned(
       bottom: 40,
       right: 32,
@@ -519,7 +428,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _selectCharacter(character.name);
               _toggleCharacterSelector();
             },
-            onClose: _toggleCharacterSelector,
           ),
         ),
       ),
@@ -664,43 +572,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// 粒子效果绘制器
-class ParticleEffectPainter extends CustomPainter {
-  final double progress;
-  final Size screenSize;
+// 粒子类
+class Particle {
+  double x;
+  double y;
+  final double size;
+  final double speed;
+  final double opacity;
 
-  ParticleEffectPainter({
-    required this.progress,
-    required this.screenSize,
+  Particle({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.speed,
+    required this.opacity,
   });
+
+  void update() {
+    y -= speed * 0.01;
+    if (y < -0.1) {
+      y = 1.1;
+      x = math.Random().nextDouble();
+    }
+  }
+}
+
+// 粒子绘制器
+class ParticlePainter extends CustomPainter {
+  final List<Particle> particles;
+  final double animationValue;
+
+  ParticlePainter(this.particles, this.animationValue);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill;
+    final paint = Paint();
 
-    // 绘制浮动粒子
-    for (int i = 0; i < 20; i++) {
-      final seed = i * 1337;
-      final random = math.Random(seed);
+    for (final particle in particles) {
+      particle.update();
       
-      final baseX = random.nextDouble() * screenSize.width;
-      final baseY = random.nextDouble() * screenSize.height;
-      
-      final offsetX = math.sin((progress * 2 * math.pi) + (i * 0.5)) * 30;
-      final offsetY = math.cos((progress * 2 * math.pi) + (i * 0.3)) * 20;
-      
-      final x = baseX + offsetX;
-      final y = baseY + offsetY;
-      
-      final opacity = (math.sin(progress * 2 * math.pi + i) + 1) / 2 * 0.1;
-      final radius = 2.0 + random.nextDouble() * 3.0;
+      final opacity = (particle.opacity * 
+          (0.5 + 0.5 * math.sin(animationValue * 2 * math.pi + particle.x * 10)))
+          .clamp(0.0, 1.0);
       
       paint.color = Colors.white.withOpacity(opacity);
-      canvas.drawCircle(Offset(x, y), radius, paint);
+      
+      canvas.drawCircle(
+        Offset(
+          particle.x * size.width,
+          particle.y * size.height,
+        ),
+        particle.size,
+        paint,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(ParticlePainter oldDelegate) => true;
 } 

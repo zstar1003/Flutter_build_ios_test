@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:math';
 import '../models/quote.dart';
 import '../services/quote_service.dart';
 
@@ -40,10 +41,20 @@ class QuoteProvider extends ChangeNotifier {
     _setError(null);
     
     try {
-      final quote = await _quoteService.getDailyCharacterQuote();
+      final character = QuoteService.getDailyCharacter();
+      final quoteText = QuoteService.getDailyQuote();
+      
+      final quote = Quote(
+        text: quoteText,
+        author: character.name,
+        character: character,
+        tags: ['每日', '明日方舟', character.profession],
+        date: DateTime.now(),
+      );
+      
       _dailyQuote = quote;
       _currentQuote = quote;
-      _currentCharacter = quote.character;
+      _currentCharacter = character;
       _addToRecentQuotes(quote);
       notifyListeners();
     } catch (e) {
@@ -59,9 +70,19 @@ class QuoteProvider extends ChangeNotifier {
     _setError(null);
     
     try {
-      final quote = await _quoteService.getRandomCharacterQuote();
+      final character = QuoteService.getRandomCharacter();
+      final quoteText = character.quotes[Random().nextInt(character.quotes.length)];
+      
+      final quote = Quote(
+        text: quoteText,
+        author: character.name,
+        character: character,
+        tags: ['随机', '明日方舟', character.profession],
+        date: DateTime.now(),
+      );
+      
       _currentQuote = quote;
-      _currentCharacter = quote.character;
+      _currentCharacter = character;
       _addToRecentQuotes(quote);
       notifyListeners();
     } catch (e) {
@@ -89,7 +110,22 @@ class QuoteProvider extends ChangeNotifier {
     }
   }
 
-
+  // 设置当前角色
+  void setCharacter(Character character) {
+    _currentCharacter = character;
+    // 获取该角色的随机金句
+    final quoteText = character.quotes[Random().nextInt(character.quotes.length)];
+    final quote = Quote(
+      text: quoteText,
+      author: character.name,
+      character: character,
+      tags: ['角色', '明日方舟', character.profession],
+      date: DateTime.now(),
+    );
+    _currentQuote = quote;
+    _addToRecentQuotes(quote);
+    notifyListeners();
+  }
 
   // 切换收藏状态
   Future<void> toggleFavorite(Quote quote) async {
@@ -124,8 +160,6 @@ class QuoteProvider extends ChangeNotifier {
     await _saveFavorites();
     notifyListeners();
   }
-
-
 
   // 设置当前金句
   void setCurrentQuote(Quote quote) {
@@ -166,7 +200,7 @@ class QuoteProvider extends ChangeNotifier {
   }
 
   void _loadCharacters() {
-    _characters = _quoteService.getAllCharacters();
+    _characters = QuoteService.getAllCharacters();
     notifyListeners();
   }
 
@@ -210,8 +244,6 @@ class QuoteProvider extends ChangeNotifier {
       debugPrint('加载历史记录失败：$e');
     }
   }
-
-
 
   // 保持兼容性的方法
   Future<void> getRandomQuote() async {

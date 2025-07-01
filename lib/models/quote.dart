@@ -84,6 +84,7 @@ class Character {
   final String subProfession;
   final String avatarUrl;
   final String illustrationUrl;
+  final String? backgroundUrl;
   final List<String> quotes;
 
   const Character({
@@ -91,9 +92,10 @@ class Character {
     required this.codename,
     required this.rarity,
     required this.profession,
-    required this.subProfession,
+    this.subProfession = '',
     required this.avatarUrl,
     required this.illustrationUrl,
+    this.backgroundUrl,
     this.quotes = const [],
   });
 
@@ -106,6 +108,7 @@ class Character {
       subProfession: json['subProfession'] ?? '',
       avatarUrl: json['avatarUrl'] ?? '',
       illustrationUrl: json['illustrationUrl'] ?? '',
+      backgroundUrl: json['backgroundUrl'],
       quotes: List<String>.from(json['quotes'] ?? []),
     );
   }
@@ -119,6 +122,7 @@ class Character {
       'subProfession': subProfession,
       'avatarUrl': avatarUrl,
       'illustrationUrl': illustrationUrl,
+      'backgroundUrl': backgroundUrl,
       'quotes': quotes,
     };
   }
