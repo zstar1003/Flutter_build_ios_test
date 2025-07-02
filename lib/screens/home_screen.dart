@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     // 粒子效果动画
     _particleController = AnimationController(
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: 60),
       vsync: this,
     )..repeat();
     
@@ -93,16 +93,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _initializeParticles() {
-    final random = math.Random();
     _particles.clear();
+    final random = math.Random();
     
-    for (int i = 0; i < _particleCount; i++) {
+    // 减少粒子数量到30个，营造更优雅的氛围
+    for (int i = 0; i < 30; i++) {
       _particles.add(Particle(
         x: random.nextDouble(),
         y: random.nextDouble(),
-        size: random.nextDouble() * 3 + 1,
-        speed: random.nextDouble() * 0.5 + 0.1,
-        opacity: random.nextDouble() * 0.3 + 0.1,
+        size: random.nextDouble() * 4 + 1, // 减小尺寸：1-5像素
+        speed: random.nextDouble() * 0.8 + 0.2, // 大幅降低速度：0.2-1.0
+        opacity: random.nextDouble() * 0.6 + 0.2, // 适中透明度：0.2-0.8
+        type: ParticleType.values[random.nextInt(ParticleType.values.length)], // 随机类型
+        color: _getRandomParticleColor(random), // 随机颜色
+        rotationSpeed: random.nextDouble() * 0.5 - 0.25, // 降低旋转速度：-0.25到0.25
+        phase: random.nextDouble() * 2 * math.pi, // 随机相位
       ));
     }
   }
@@ -158,13 +163,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // 渐变遮罩
               _buildGradientOverlay(),
               
-              // 粒子效果
-              _buildParticleSystem(),
-              
               // 金句内容 - 始终显示
               if (displayQuote != null)
                 _buildMainContent(context, displayQuote, displayCharacter, MediaQuery.of(context).size),
               
+              // === 特效层区域 - 显示在所有内容之上 ===
+              // 粒子效果
+              _buildParticleSystem(),
+              
+              // 光晕效果
+              _buildGlowEffects(),
+              
+              // 闪烁星星
+              _buildTwinklingStars(),
+              
+              // 浮动几何图案
+              _buildFloatingPatterns(),
+              
+              // === UI控件层 ===
               // 角色信息（左上角）
               if (displayCharacter != null)
                 Positioned(
@@ -308,6 +324,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         builder: (context, child) {
           return CustomPaint(
             painter: ParticlePainter(_particles, _particleController.value),
+            size: MediaQuery.of(context).size,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGlowEffects() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: GlowEffectPainter(_particleController.value),
+            size: MediaQuery.of(context).size,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTwinklingStars() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: TwinklingStarsPainter(_particleController.value),
+            size: MediaQuery.of(context).size,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFloatingPatterns() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: FloatingPatternsPainter(_particleController.value),
             size: MediaQuery.of(context).size,
           );
         },
@@ -680,6 +738,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  // 获取随机粒子颜色
+  Color _getRandomParticleColor(math.Random random) {
+    final colors = [
+      Colors.white,
+      Colors.blue.withOpacity(0.7),
+      Colors.cyan.withOpacity(0.7),
+      Colors.purple.withOpacity(0.7),
+      Colors.pink.withOpacity(0.7),
+      const Color(0xFFFF6B35).withOpacity(0.7), // 橙色
+      const Color(0xFFFFD700).withOpacity(0.7), // 金色
+    ];
+    return colors[random.nextInt(colors.length)];
+  }
+
   Widget _buildTimeDisplay() {
     final now = DateTime.now();
     final dateStr = '${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -732,13 +804,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// 粒子类
+// 粒子类型枚举
+enum ParticleType {
+  circle,    // 圆形
+  star,      // 星形
+  diamond,   // 菱形
+  square,    // 方形
+  triangle,  // 三角形
+}
+
+// 增强的粒子类
 class Particle {
   double x;
   double y;
   final double size;
   final double speed;
   final double opacity;
+  final ParticleType type;
+  final Color color;
+  final double rotationSpeed;
+  final double phase;
+  double rotation = 0.0;
 
   Particle({
     required this.x,
@@ -746,18 +832,33 @@ class Particle {
     required this.size,
     required this.speed,
     required this.opacity,
+    required this.type,
+    required this.color,
+    required this.rotationSpeed,
+    required this.phase,
   });
 
-  void update() {
-    y -= speed * 0.01;
+  void update(double animationValue) {
+    // 垂直移动 - 大幅降低速度
+    y -= speed * 0.003; // 从0.008降低到0.003
+    
+    // 水平波动 - 降低幅度和频率
+    x += math.sin(animationValue * math.pi + phase) * 0.0005; // 降低频率和幅度
+    
+    // 旋转 - 降低旋转速度
+    rotation += rotationSpeed * 0.01; // 从0.02降低到0.01
+    
+    // 边界检查和重置
     if (y < -0.1) {
       y = 1.1;
       x = math.Random().nextDouble();
     }
+    if (x < 0) x = 1.0;
+    if (x > 1) x = 0.0;
   }
 }
 
-// 粒子绘制器
+// 增强的粒子绘制器
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final double animationValue;
@@ -766,28 +867,286 @@ class ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint();
-
     for (final particle in particles) {
-      particle.update();
+      particle.update(animationValue);
       
+      // 计算动态透明度 - 降低变化频率
       final opacity = (particle.opacity * 
-          (0.5 + 0.5 * math.sin(animationValue * 2 * math.pi + particle.x * 10)))
-          .clamp(0.0, 1.0);
+          (0.7 + 0.3 * math.sin(animationValue * math.pi + particle.phase))) // 降低频率，提高基础透明度
+          .clamp(0.3, 0.9); // 设置更温和的透明度范围
       
-      paint.color = Colors.white.withOpacity(opacity);
+      final paint = Paint()
+        ..color = particle.color.withOpacity(opacity)
+        ..style = PaintingStyle.fill;
       
-      canvas.drawCircle(
-        Offset(
-          particle.x * size.width,
-          particle.y * size.height,
-        ),
-        particle.size,
-        paint,
+      final center = Offset(
+        particle.x * size.width,
+        particle.y * size.height,
       );
+      
+      // 保存canvas状态
+      canvas.save();
+      
+      // 移动到粒子中心并旋转
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(particle.rotation);
+      
+      // 根据粒子类型绘制不同形状
+      switch (particle.type) {
+        case ParticleType.circle:
+          canvas.drawCircle(Offset.zero, particle.size, paint);
+          break;
+        case ParticleType.star:
+          _drawStar(canvas, paint, particle.size);
+          break;
+        case ParticleType.diamond:
+          _drawDiamond(canvas, paint, particle.size);
+          break;
+        case ParticleType.square:
+          canvas.drawRect(
+            Rect.fromCenter(center: Offset.zero, width: particle.size * 2, height: particle.size * 2),
+            paint,
+          );
+          break;
+        case ParticleType.triangle:
+          _drawTriangle(canvas, paint, particle.size);
+          break;
+      }
+      
+      // 恢复canvas状态
+      canvas.restore();
     }
+  }
+
+  void _drawStar(Canvas canvas, Paint paint, double size) {
+    final path = Path();
+    const int points = 5;
+    final double outerRadius = size;
+    final double innerRadius = size * 0.4;
+    
+    for (int i = 0; i < points * 2; i++) {
+      final double angle = (i * math.pi) / points;
+      final double radius = i.isEven ? outerRadius : innerRadius;
+      final double x = radius * math.cos(angle - math.pi / 2);
+      final double y = radius * math.sin(angle - math.pi / 2);
+      
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawDiamond(Canvas canvas, Paint paint, double size) {
+    final path = Path();
+    path.moveTo(0, -size);
+    path.lineTo(size, 0);
+    path.lineTo(0, size);
+    path.lineTo(-size, 0);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawTriangle(Canvas canvas, Paint paint, double size) {
+    final path = Path();
+    path.moveTo(0, -size);
+    path.lineTo(size * 0.866, size * 0.5);
+    path.lineTo(-size * 0.866, size * 0.5);
+    path.close();
+    canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(ParticlePainter oldDelegate) => true;
+}
+
+// 光晕效果绘制器
+class GlowEffectPainter extends CustomPainter {
+  final double animationValue;
+
+  GlowEffectPainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(42); // 固定种子确保位置一致
+    
+    // 绘制多个光晕圆圈
+    for (int i = 0; i < 6; i++) { // 减少到6个
+      final center = Offset(
+        size.width * (0.1 + random.nextDouble() * 0.8),
+        size.height * (0.1 + random.nextDouble() * 0.8),
+      );
+      
+      final radius = 40 + random.nextDouble() * 80; // 减小半径
+      final opacity = (0.05 + 0.1 * math.sin(animationValue * math.pi + i)) * 0.2; // 降低频率和透明度
+      
+      final gradient = RadialGradient(
+        colors: [
+          Colors.cyan.withOpacity(opacity),
+          Colors.blue.withOpacity(opacity * 0.5),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.7, 1.0],
+      );
+      
+      final paint = Paint()
+        ..shader = gradient.createShader(Rect.fromCircle(center: center, radius: radius));
+      
+      canvas.drawCircle(center, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(GlowEffectPainter oldDelegate) => true;
+}
+
+// 闪烁星星绘制器
+class TwinklingStarsPainter extends CustomPainter {
+  final double animationValue;
+
+  TwinklingStarsPainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(123); // 固定种子确保位置一致
+    
+    // 绘制多个闪烁星星
+    for (int i = 0; i < 15; i++) { // 减少到15个
+      final x = size.width * random.nextDouble();
+      final y = size.height * random.nextDouble();
+      
+      // 计算闪烁效果 - 降低频率
+      final twinkle = math.sin(animationValue * 2 * math.pi + i * 0.8); // 降低频率
+      final opacity = (0.2 + 0.5 * twinkle.abs()).clamp(0.0, 1.0) * 0.4; // 降低透明度
+      final starSize = 1.5 + twinkle.abs() * 2; // 减小星星尺寸
+      
+      if (opacity > 0.1) { // 降低显示阈值
+        _drawTwinklingStar(canvas, Offset(x, y), starSize, opacity);
+      }
+    }
+  }
+
+  void _drawTwinklingStar(Canvas canvas, Offset center, double size, double opacity) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    
+    // 绘制十字星
+    canvas.drawLine(
+      Offset(center.dx - size, center.dy),
+      Offset(center.dx + size, center.dy),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(center.dx, center.dy - size),
+      Offset(center.dx, center.dy + size),
+      paint,
+    );
+    
+    // 绘制对角线
+    final diagSize = size * 0.7;
+    canvas.drawLine(
+      Offset(center.dx - diagSize, center.dy - diagSize),
+      Offset(center.dx + diagSize, center.dy + diagSize),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(center.dx - diagSize, center.dy + diagSize),
+      Offset(center.dx + diagSize, center.dy - diagSize),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(TwinklingStarsPainter oldDelegate) => true;
+}
+
+// 浮动几何图案绘制器
+class FloatingPatternsPainter extends CustomPainter {
+  final double animationValue;
+
+  FloatingPatternsPainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(456); // 固定种子
+    
+    // 绘制浮动的六边形
+    for (int i = 0; i < 4; i++) { // 减少到4个
+      final progress = (animationValue * 0.3 + i * 0.25) % 1.0; // 降低移动速度
+      final x = size.width * (0.1 + random.nextDouble() * 0.8);
+      final y = size.height * (progress * 1.2 - 0.1); // 从下往上移动
+      
+      final hexSize = 15 + random.nextDouble() * 20; // 减小尺寸
+      final opacity = (0.05 + 0.15 * math.sin(animationValue * math.pi + i)) * 0.3; // 降低频率和透明度
+      
+      if (y > -50 && y < size.height + 50) {
+        _drawHexagon(canvas, Offset(x, y), hexSize, opacity, animationValue * 0.5 + i); // 降低旋转速度
+      }
+    }
+    
+    // 绘制能量流线
+    for (int i = 0; i < 3; i++) { // 减少到3个
+      final progress = (animationValue * 0.2 + i * 0.33) % 1.0; // 降低速度
+      final startX = size.width * random.nextDouble();
+      final endX = startX + (random.nextDouble() - 0.5) * 150; // 减小长度
+      final y = size.height * progress;
+      
+      final opacity = (0.1 + 0.2 * math.sin(animationValue * math.pi + i)) * 0.2; // 降低透明度
+      
+      _drawEnergyStream(canvas, Offset(startX, y), Offset(endX, y), opacity);
+    }
+  }
+
+  void _drawHexagon(Canvas canvas, Offset center, double size, double opacity, double rotation) {
+    final paint = Paint()
+      ..color = const Color(0xFF00FFFF).withOpacity(opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    
+    final path = Path();
+    
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * math.pi / 3) + rotation;
+      final x = center.dx + size * math.cos(angle);
+      final y = center.dy + size * math.sin(angle);
+      
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawEnergyStream(Canvas canvas, Offset start, Offset end, double opacity) {
+    final paint = Paint()
+      ..color = const Color(0xFFFF6B35).withOpacity(opacity)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    
+    final gradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        Colors.transparent,
+        const Color(0xFFFF6B35).withOpacity(opacity),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+    
+    paint.shader = gradient.createShader(Rect.fromPoints(start, end));
+    canvas.drawLine(start, end, paint);
+  }
+
+  @override
+  bool shouldRepaint(FloatingPatternsPainter oldDelegate) => true;
 } 
