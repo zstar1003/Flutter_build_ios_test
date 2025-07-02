@@ -34,6 +34,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 添加时间相关变量
   late Timer _timeTimer;
   String _currentTime = '';
+  
+  // 添加自动刷新Timer
+  late Timer _autoRefreshTimer;
+  late DateTime _nextRefreshTime;
 
   @override
   void initState() {
@@ -90,6 +94,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 初始化时间显示
     _updateTime();
     _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
+    
+    // 初始化自动刷新Timer - 每小时刷新一次
+    _nextRefreshTime = DateTime.now().add(const Duration(hours: 1));
+    _autoRefreshTimer = Timer.periodic(const Duration(hours: 1), (_) => _autoRefreshQuote());
   }
 
   void _initializeParticles() {
@@ -114,10 +122,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _particleController.dispose();
     _quoteController.dispose();
     _characterController.dispose();
+    _particleController.dispose();
     _timeTimer.cancel(); // 取消时间更新定时器
+    _autoRefreshTimer.cancel(); // 取消自动刷新定时器
     super.dispose();
   }
 
@@ -669,6 +678,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _quoteController.forward();
     _characterController.forward();
     HapticFeedback.lightImpact();
+    
+    // 重置自动刷新计时器
+    _nextRefreshTime = DateTime.now().add(const Duration(hours: 1));
   }
 
   void _selectCharacter(String characterName) {
@@ -756,6 +768,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final now = DateTime.now();
     final dateStr = '${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     
+    // 计算距离下次刷新的时间
+    final timeUntilRefresh = _nextRefreshTime.difference(now);
+    final minutesUntilRefresh = timeUntilRefresh.inMinutes;
+    String refreshText;
+    if (minutesUntilRefresh > 0) {
+      refreshText = '${minutesUntilRefresh}分钟后刷新';
+    } else {
+      refreshText = '即将刷新...';
+    }
+    
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(16),
@@ -788,7 +810,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
                 dateStr,
                 style: TextStyle(
@@ -796,11 +817,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   fontSize: 14,
                 ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                refreshText,
+                style: TextStyle(
+                  color: Colors.cyan.withOpacity(0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  // 自动刷新方法
+  void _autoRefreshQuote() {
+    if (mounted) {
+      final provider = Provider.of<QuoteProvider>(context, listen: false);
+      _refreshQuote(provider);
+      
+      // 显示自动刷新提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text('已自动更新金句', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          backgroundColor: Colors.black.withOpacity(0.8),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 }
 
