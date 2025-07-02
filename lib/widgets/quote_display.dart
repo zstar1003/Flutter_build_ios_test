@@ -19,8 +19,9 @@ class QuoteDisplay extends StatelessWidget {
     
     return Container(
       constraints: BoxConstraints(
-        maxWidth: screenWidth * 0.5, // 占屏幕宽度的一半
-        maxHeight: 350,
+        maxWidth: screenWidth * 0.35, // 进一步缩短宽度
+        minHeight: 200,
+        maxHeight: 400, // 增加最大高度
       ),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -48,16 +49,20 @@ class QuoteDisplay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 金句内容
-          Text(
-            quote!.text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22, // 稍微增大字体
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              letterSpacing: 0.5,
+          Flexible(
+            child: Text(
+              quote!.text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20, // 稍微调整字体大小
+                fontWeight: FontWeight.w600,
+                height: 1.5, // 增加行高以改善可读性
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+              softWrap: true, // 启用软换行
+              overflow: TextOverflow.visible, // 允许文本显示完整
             ),
-            textAlign: TextAlign.center,
           ),
           
           const SizedBox(height: 20),
@@ -79,10 +84,11 @@ class QuoteDisplay extends StatelessWidget {
             '— ${quote!.author}',
             style: TextStyle(
               color: _getRarityColor(quote!.character?.rarity ?? '1').withOpacity(0.9),
-              fontSize: 18, // 增大作者字体
+              fontSize: 18,
               fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
             ),
+            softWrap: true, // 确保作者名字也能换行
           ),
         ],
       ),

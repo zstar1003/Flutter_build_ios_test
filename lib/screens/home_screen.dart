@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math' as math;
+import 'dart:async';
 import '../providers/quote_provider.dart';
 import '../models/quote.dart';
 import '../theme/app_theme.dart';
@@ -29,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   final List<Particle> _particles = [];
   static const int _particleCount = 20;
+
+  // 添加时间相关变量
+  late Timer _timeTimer;
+  String _currentTime = '';
 
   @override
   void initState() {
@@ -81,6 +86,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     // 初始化粒子
     _initializeParticles();
+    
+    // 初始化时间显示
+    _updateTime();
+    _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
   }
 
   void _initializeParticles() {
@@ -103,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _particleController.dispose();
     _quoteController.dispose();
     _characterController.dispose();
+    _timeTimer.cancel(); // 取消时间更新定时器
     super.dispose();
   }
 
@@ -162,6 +172,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   left: 0,
                   child: _buildCharacterInfo(displayCharacter),
                 ),
+              
+              // 时间显示（右上角）
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                right: 24,
+                child: _buildTimeDisplay(),
+              ),
               
               // 控制按钮
               _buildControlButtons(context),
@@ -332,13 +349,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Container(
       margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: _getRarityColor(character.rarity),
-          width: 2,
+          width: 3,
         ),
       ),
       child: Row(
@@ -347,32 +364,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Icon(
             _getProfessionIcon(character.profession),
             color: _getRarityColor(character.rarity),
-            size: 20,
+            size: 24,
           ),
-          const SizedBox(width: 8),
-          Text(
-            character.name,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: _getRarityColor(character.rarity),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${character.rarity}★',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                character.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    character.profession,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _getRarityColor(character.rarity),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${character.rarity}★',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -634,6 +670,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       default:
         return Icons.person;
     }
+  }
+
+  // 更新当前时间
+  void _updateTime() {
+    final now = DateTime.now();
+    setState(() {
+      _currentTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
+
+  Widget _buildTimeDisplay() {
+    final now = DateTime.now();
+    final dateStr = '${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    
+    return Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 3,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.access_time,
+            color: Colors.white.withOpacity(0.8),
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _currentTime,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                dateStr,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
