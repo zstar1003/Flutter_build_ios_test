@@ -46,7 +46,7 @@ class QuoteDisplay extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: quote!.text.length < 80 ? MainAxisAlignment.center : MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           // 金句内容

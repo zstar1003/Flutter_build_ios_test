@@ -53,6 +53,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -99,3 +100,8 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   # 使用Google Fonts，无需手动添加字体文件
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo/logo.png"
