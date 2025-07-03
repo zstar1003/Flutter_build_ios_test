@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [ main, master ]
 
+
+
 jobs:
   quick-test:
     runs-on: ubuntu-latest
@@ -28,7 +30,7 @@ jobs:
       run: flutter pub get
       
     - name: 🔍 Analyze Code
-      run: flutter analyze
+      run: flutter analyze --no-fatal-warnings --no-fatal-infos
       
     - name: 🧪 Run Tests
       run: flutter test

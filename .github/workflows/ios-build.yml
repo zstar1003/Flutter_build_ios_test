@@ -8,6 +8,11 @@ on:
   # 允许手动触发
   workflow_dispatch:
 
+permissions:  
+  contents: write     
+  packages: write               
+  issues: write 
+
 jobs:
   build-ios:
     runs-on: macos-latest
