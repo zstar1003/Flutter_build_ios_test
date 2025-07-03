@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/character_selector.dart';
 import '../widgets/quote_display.dart';
 import '../widgets/character_display.dart';
+import '../widgets/safe_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -190,18 +191,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _buildFloatingPatterns(),
               
               // === UI控件层 ===
-              // 角色信息（左上角）
-              if (displayCharacter != null)
+              // 角色信息（左上角）- 在横屏模式下隐藏，因为已经在右侧内容区域显示
+              if (displayCharacter != null && MediaQuery.of(context).size.width <= MediaQuery.of(context).size.height)
                 Positioned(
                   top: 40,
                   left: 20,
                   child: _buildCharacterInfo(displayCharacter),
                 ),
               
-              // 时间显示（右上角）
+              // 时间显示（根据屏幕方向调整位置）
               Positioned(
-                top: MediaQuery.of(context).padding.top + 16,
-                right: 24,
+                top: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? null : MediaQuery.of(context).padding.top + 16,
+                right: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? null : 24,
+                bottom: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? 120 : null,
+                left: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? 24 : null,
                 child: _buildTimeDisplay(),
               ),
               
@@ -242,24 +245,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       children: [
         // 背景图片
         Positioned.fill(
-          child: Image.asset(
-            character.backgroundUrl ?? character.illustrationUrl,
+          child: CharacterBackgroundImage(
+            imagePath: character.backgroundUrl ?? character.illustrationUrl,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF1a1a2e),
-                      const Color(0xFF16213e),
-                      const Color(0xFF0f3460),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
         ),
         
@@ -270,37 +258,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           bottom: 0,
           width: size.width * 0.6,
           child: ClipRect(
-            child: Image.asset(
-              character.illustrationUrl,
+            child: CharacterIllustrationImage(
+              imagePath: character.illustrationUrl,
+              characterName: character.codename,
               fit: BoxFit.cover,
               alignment: Alignment.centerLeft,
-              errorBuilder: (context, error, stackTrace) {
-                print('角色立绘加载失败: ${character.illustrationUrl}');
-                print('错误: $error');
-                return Container(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _getProfessionIcon(character.profession),
-                          size: 80,
-                          color: _getRarityColor(character.rarity).withOpacity(0.6),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          character.codename,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
             ),
           ),
         ),
@@ -385,28 +347,147 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildMainContent(BuildContext context, Quote? currentQuote, Character? character, Size size) {
     if (currentQuote == null) return Container();
     
+    // 检测是否为横屏模式
+    bool isLandscape = size.width > size.height;
+    
     return SafeArea(
       child: AnimatedBuilder(
         animation: _characterAnimation,
         builder: (context, child) {
           return Opacity(
             opacity: _characterAnimation.value.clamp(0.0, 1.0),
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: size.width * 0.4, // 更靠右一些
-                  right: 24.0,
-                  top: 24.0,
-                  bottom: 120.0, // 为底部按钮留出空间
-                ),
-                child: Transform.scale(
-                  scale: 1.3, // 放大到1.3倍
-                  child: QuoteDisplay(quote: currentQuote),
-                ),
-              ),
-            ),
+            child: isLandscape ? _buildLandscapeContent(currentQuote, character, size) : _buildPortraitContent(currentQuote, character, size),
           );
         },
+      ),
+    );
+  }
+
+  // 横屏布局
+  Widget _buildLandscapeContent(Quote currentQuote, Character? character, Size size) {
+    return Row(
+      children: [
+        // 左侧：角色立绘区域 (40%宽度)
+        SizedBox(
+          width: size.width * 0.4,
+          child: Container(), // 角色立绘已在背景层处理
+        ),
+        // 右侧：金句内容区域 (60%宽度)
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 角色信息卡片
+                if (character != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _getRarityColor(character.rarity).withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 角色名称
+                        Text(
+                          character.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 稀有度星级
+                        Row(
+                          children: List.generate(
+                            int.tryParse(character.rarity) ?? 0,
+                            (index) => Icon(
+                              Icons.star,
+                              color: _getRarityColor(character.rarity),
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // 金句显示区域
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 金句内容
+                        Text(
+                          currentQuote.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            height: 1.6,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // 作者信息
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              '—— ${currentQuote.author ?? '佚名'}',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 竖屏布局（保持原样）
+  Widget _buildPortraitContent(Quote currentQuote, Character? character, Size size) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: size.width * 0.4,
+          right: 24.0,
+          top: 24.0,
+          bottom: 120.0,
+        ),
+        child: Transform.scale(
+          scale: 1.3,
+          child: QuoteDisplay(quote: currentQuote),
+        ),
       ),
     );
   }
@@ -432,19 +513,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: 32,
             height: 32,
             margin: const EdgeInsets.only(right: 12),
-            child: Image.asset(
-              'assets/logo/logo_laios.png',
+            child: SafeImage(
+              assetPath: 'assets/logo/logo_laios.png',
               width: 32,
               height: 32,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                // 如果logo加载失败，显示一个默认图标
-                return Icon(
-                  Icons.stars,
-                  color: _getRarityColor(character.rarity),
-                  size: 32,
-                );
-              },
+              errorWidget: Icon(
+                Icons.stars,
+                color: _getRarityColor(character.rarity),
+                size: 32,
+              ),
             ),
           ),
           Column(
@@ -482,19 +560,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Container(
                     width: 24,
                     height: 24,
-                    child: Image.asset(
-                      _getProfessionIconPath(character.profession),
+                    child: SafeImage(
+                      assetPath: _getProfessionIconPath(character.profession),
                       width: 24,
                       height: 24,
                       fit: BoxFit.contain, // 添加fit属性确保图片完整显示
-                      errorBuilder: (context, error, stackTrace) {
-                        // 如果图片加载失败，使用备用图标
-                        return Icon(
-                          _getProfessionIcon(character.profession),
-                          color: _getRarityColor(character.rarity),
-                          size: 24,
-                        );
-                      },
+                      errorWidget: Icon(
+                        _getProfessionIcon(character.profession),
+                        color: _getRarityColor(character.rarity),
+                        size: 24,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
