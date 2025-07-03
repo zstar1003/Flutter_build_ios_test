@@ -17,11 +17,12 @@ class QuoteDisplay extends StatelessWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     
+    final double fixedWidth = (screenWidth * 0.42).clamp(280.0, 420.0);
     return Container(
       constraints: BoxConstraints(
-        maxWidth: screenWidth * 0.35, // 进一步缩短宽度
-        minHeight: 200,
-        maxHeight: 400, // 增加最大高度
+        minWidth: fixedWidth,
+        maxWidth: fixedWidth,
+        minHeight: 230,
       ),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -45,23 +46,24 @@ class QuoteDisplay extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           // 金句内容
           Flexible(
-            child: Text(
-              quote!.text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20, // 稍微调整字体大小
-                fontWeight: FontWeight.w600,
-                height: 1.5, // 增加行高以改善可读性
-                letterSpacing: 0.5,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                quote!.text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-              softWrap: true, // 启用软换行
-              overflow: TextOverflow.visible, // 允许文本显示完整
             ),
           ),
           
@@ -84,7 +86,7 @@ class QuoteDisplay extends StatelessWidget {
             '— ${quote!.author}',
             style: TextStyle(
               color: _getRarityColor(quote!.character?.rarity ?? '1').withOpacity(0.9),
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
             ),

@@ -67,42 +67,46 @@ class _CharacterSelectorState extends State<CharacterSelector>
           opacity: _opacityAnimation.value.clamp(0.0, 1.0),
           child: Transform.scale(
             scale: _scaleAnimation.value,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              height: MediaQuery.of(context).size.height * 0.8,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF1A1A2E).withOpacity(0.95),
-                    const Color(0xFF16213E).withOpacity(0.95),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLandscape = constraints.maxWidth > constraints.maxHeight;
+                final double width = isLandscape ? constraints.maxWidth * 0.92 : constraints.maxWidth * 0.85;
+                final double height = isLandscape ? constraints.maxHeight * 0.88 : constraints.maxHeight * 0.8;
+                return Container(
+                  width: width,
+                  height: height,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF1A1A2E).withOpacity(0.95),
+                        const Color(0xFF16213E).withOpacity(0.95),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // 头部
-                  _buildHeader(),
-                  
-                  // 角色网格
-                  Expanded(
-                    child: _buildCharacterGrid(),
+                  child: Column(
+                    children: [
+                      _buildHeader(isLandscape),
+                      Expanded(
+                        child: _buildCharacterGrid(isLandscape),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         );
@@ -110,13 +114,13 @@ class _CharacterSelectorState extends State<CharacterSelector>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader([bool isLandscape = false]) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isLandscape ? 12 : 16),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isLandscape ? 6 : 10),
             decoration: BoxDecoration(
               gradient: AppTheme.primaryGradient,
               borderRadius: BorderRadius.circular(12),
@@ -124,16 +128,16 @@ class _CharacterSelectorState extends State<CharacterSelector>
             child: const Icon(
               Icons.people,
               color: Colors.white,
-              size: 24,
+              size: 20,
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
+          SizedBox(width: isLandscape ? 10 : 14),
+          Expanded(
             child: Text(
               '选择干员',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 22,
+                fontSize: isLandscape ? 16 : 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -145,7 +149,7 @@ class _CharacterSelectorState extends State<CharacterSelector>
               });
             },
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isLandscape ? 6 : 8),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -153,7 +157,7 @@ class _CharacterSelectorState extends State<CharacterSelector>
               child: const Icon(
                 Icons.close,
                 color: Colors.white,
-                size: 20,
+                size: 18,
               ),
             ),
           ),
@@ -162,24 +166,25 @@ class _CharacterSelectorState extends State<CharacterSelector>
     );
   }
 
-  Widget _buildCharacterGrid() {
+  Widget _buildCharacterGrid([bool isLandscape = false]) {
     return Consumer<QuoteProvider>(
       builder: (context, provider, child) {
         final characters = provider.characters;
-        
+        final crossAxisCount = isLandscape ? 8 : 5;
+        final aspectRatio = isLandscape ? 0.9 : 0.8;
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(12),
           child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5, // 5列
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.8,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: aspectRatio,
             ),
             itemCount: characters.length,
             itemBuilder: (context, index) {
               final character = characters[index];
-              return _buildCharacterCard(character);
+              return _buildCharacterCard(character, isLandscape);
             },
           ),
         );
@@ -187,7 +192,7 @@ class _CharacterSelectorState extends State<CharacterSelector>
     );
   }
 
-  Widget _buildCharacterCard(Character character) {
+  Widget _buildCharacterCard(Character character, [bool isLandscape = false]) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -214,42 +219,43 @@ class _CharacterSelectorState extends State<CharacterSelector>
             children: [
               // 角色立绘背景
               Positioned.fill(
-                child: Image.asset(
-                  character.illustrationUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            _getRarityColor(character.rarity).withOpacity(0.6),
-                            _getRarityColor(character.rarity).withOpacity(0.3),
-                          ],
+                child: Padding(
+                  padding: EdgeInsets.all(isLandscape ? 6 : 10),
+                  child: Image.asset(
+                    character.illustrationUrl,
+                    fit: BoxFit.fitHeight,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              _getRarityColor(character.rarity).withOpacity(0.6),
+                              _getRarityColor(character.rarity).withOpacity(0.3),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          _getProfessionIconPath(character.profession),
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            // 如果职业图标也加载失败，使用备用图标
-                            return Icon(
-                              _getProfessionIcon(character.profession),
-                              size: 60,
-                              color: Colors.white.withOpacity(0.8),
-                            );
-                          },
+                        child: Center(
+                          child: Image.asset(
+                            _getProfessionIconPath(character.profession),
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                _getProfessionIcon(character.profession),
+                                size: 40,
+                                color: Colors.white.withOpacity(0.8),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-              
               // 渐变遮罩
               Positioned.fill(
                 child: Container(
@@ -258,94 +264,37 @@ class _CharacterSelectorState extends State<CharacterSelector>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withOpacity(0.0),
+                        Colors.black.withOpacity(0.18),
+                        Colors.black.withOpacity(0.38),
                       ],
                     ),
                   ),
                 ),
               ),
-              
-              // 角色信息
+              // 名称
               Positioned(
-                bottom: 0,
                 left: 0,
                 right: 0,
+                bottom: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 角色名称
-                      Text(
-                        character.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                  color: Colors.black.withOpacity(0.45),
+                  child: Text(
+                    character.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black54,
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
                         ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      
-                      const SizedBox(height: 4),
-                      
-                      // 代号
-                      Text(
-                        character.codename,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // 星级
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          int.parse(character.rarity),
-                          (index) => Icon(
-                            Icons.star,
-                            color: _getRarityColor(character.rarity),
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // 职业图标
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Image.asset(
-                    _getProfessionIconPath(character.profession),
-                    width: 20,
-                    height: 20,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      // 如果图片加载失败，使用备用图标
-                      return Icon(
-                        _getProfessionIcon(character.profession),
-                        size: 20,
-                        color: _getRarityColor(character.rarity),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
               ),

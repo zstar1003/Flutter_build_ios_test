@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/quote_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/image_test_screen.dart';
 import 'theme/app_theme.dart';
+import 'utils/image_checker.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // 设置横屏模式
@@ -14,18 +16,19 @@ void main() {
     DeviceOrientation.landscapeRight,
   ]);
   
+  // 沉浸式隐藏系统栏
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  
   // 设置图片加载错误处理
   FlutterError.onError = (FlutterErrorDetails details) {
-    // 只在Debug模式下打印图片加载错误
-    if (details.exception.toString().contains('Failed assertion') ||
-        details.exception.toString().contains('painting.dart')) {
-      debugPrint('图片加载错误: ${details.exception}');
-      // 不重新抛出异常，避免崩溃
-      return;
-    }
-    // 其他错误正常处理
-    FlutterError.presentError(details);
+    // 一律打印完整异常 & 堆栈，方便排查
+    debugPrint('⚠️ FlutterError 捕获: ${details.exceptionAsString()}');
+    debugPrint(details.stack?.toString() ?? '无 Stack');
+    FlutterError.presentError(details); // 保持系统行为
   };
+  
+  // 检测图片是否损坏，打印结果
+  await runImageChecker();
   
   runApp(const ArknightsApp());
 }
@@ -44,6 +47,9 @@ class ArknightsApp extends StatelessWidget {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.system,
         home: const ImagePreloader(),
+        routes: {
+          '/image-test': (_) => const ImageTestScreen(),
+        },
       ),
     );
   }
@@ -59,11 +65,20 @@ class ImagePreloader extends StatefulWidget {
 class _ImagePreloaderState extends State<ImagePreloader> {
   bool _isLoading = true;
   String _loadingStatus = '正在加载资源...';
+  bool _started = false; // 防止didChangeDependencies多次执行
 
   @override
   void initState() {
     super.initState();
-    _preloadImages();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      _preloadImages();
+    }
   }
 
   Future<void> _preloadImages() async {

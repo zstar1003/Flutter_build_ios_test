@@ -194,19 +194,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // 角色信息（左上角）- 在横屏模式下隐藏，因为已经在右侧内容区域显示
               if (displayCharacter != null && MediaQuery.of(context).size.width <= MediaQuery.of(context).size.height)
                 Positioned(
-                  top: 40,
+                  top: 10,
                   left: 20,
                   child: _buildCharacterInfo(displayCharacter),
                 ),
-              
-              // 时间显示（根据屏幕方向调整位置）
-              Positioned(
-                top: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? null : MediaQuery.of(context).padding.top + 16,
-                right: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? null : 24,
-                bottom: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? 120 : null,
-                left: MediaQuery.of(context).size.width > MediaQuery.of(context).size.height ? 24 : null,
-                child: _buildTimeDisplay(),
-              ),
               
               // 控制按钮
               _buildControlButtons(context),
@@ -346,148 +337,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildMainContent(BuildContext context, Quote? currentQuote, Character? character, Size size) {
     if (currentQuote == null) return Container();
-    
-    // 检测是否为横屏模式
-    bool isLandscape = size.width > size.height;
-    
     return SafeArea(
       child: AnimatedBuilder(
         animation: _characterAnimation,
         builder: (context, child) {
           return Opacity(
             opacity: _characterAnimation.value.clamp(0.0, 1.0),
-            child: isLandscape ? _buildLandscapeContent(currentQuote, character, size) : _buildPortraitContent(currentQuote, character, size),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: size.width * 0.33, // 微调位置
+                  right: 24.0,
+                  top: 10.0,
+                  bottom: 100.0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildTimeDisplay(),
+                    const SizedBox(height: 12),
+                    Flexible(child: QuoteDisplay(quote: currentQuote)),
+                  ],
+                ),
+              ),
+            ),
           );
         },
-      ),
-    );
-  }
-
-  // 横屏布局
-  Widget _buildLandscapeContent(Quote currentQuote, Character? character, Size size) {
-    return Row(
-      children: [
-        // 左侧：角色立绘区域 (40%宽度)
-        SizedBox(
-          width: size.width * 0.4,
-          child: Container(), // 角色立绘已在背景层处理
-        ),
-        // 右侧：金句内容区域 (60%宽度)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 角色信息卡片
-                if (character != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _getRarityColor(character.rarity).withOpacity(0.5),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 角色名称
-                        Text(
-                          character.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // 稀有度星级
-                        Row(
-                          children: List.generate(
-                            int.tryParse(character.rarity) ?? 0,
-                            (index) => Icon(
-                              Icons.star,
-                              color: _getRarityColor(character.rarity),
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                // 金句显示区域
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 金句内容
-                        Text(
-                          currentQuote.text,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // 作者信息
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              '—— ${currentQuote.author ?? '佚名'}',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 16,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 竖屏布局（保持原样）
-  Widget _buildPortraitContent(Quote currentQuote, Character? character, Size size) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: size.width * 0.4,
-          right: 24.0,
-          top: 24.0,
-          bottom: 120.0,
-        ),
-        child: Transform.scale(
-          scale: 1.3,
-          child: QuoteDisplay(quote: currentQuote),
-        ),
       ),
     );
   }
@@ -908,54 +784,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
     
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(
           color: Colors.white.withOpacity(0.3),
-          width: 3,
+          width: 2,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.access_time,
-            color: Colors.white.withOpacity(0.8),
-            size: 24,
+          Icon(Icons.access_time, color: Colors.white.withOpacity(0.9), size: 20),
+          const SizedBox(width: 10),
+          Text(
+            _currentTime,
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _currentTime,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                dateStr,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                refreshText,
-                style: TextStyle(
-                  color: Colors.cyan.withOpacity(0.8),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          const SizedBox(width: 14),
+          Text(
+            dateStr,
+            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+          ),
+          const SizedBox(width: 14),
+          Text(
+            refreshText,
+            style: TextStyle(color: Colors.cyan.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -1169,7 +1025,8 @@ class GlowEffectPainter extends CustomPainter {
       );
       
       final radius = 40 + random.nextDouble() * 80; // 减小半径
-      final opacity = (0.05 + 0.1 * math.sin(animationValue * math.pi + i)) * 0.2; // 降低频率和透明度
+      var opacity = (0.05 + 0.1 * math.sin(animationValue * math.pi + i)) * 0.2; // 可能出现负值
+      opacity = opacity.clamp(0.0, 1.0); // 确保在合法范围
       
       final gradient = RadialGradient(
         colors: [
@@ -1270,9 +1127,10 @@ class FloatingPatternsPainter extends CustomPainter {
       final y = size.height * (progress * 1.2 - 0.1); // 从下往上移动
       
       final hexSize = 15 + random.nextDouble() * 20; // 减小尺寸
-      final opacity = (0.05 + 0.15 * math.sin(animationValue * math.pi + i)) * 0.3; // 降低频率和透明度
+      var opacity = (0.05 + 0.15 * math.sin(animationValue * math.pi + i)) * 0.3; // 可能出现负值
+      opacity = opacity.clamp(0.0, 1.0);
       
-      if (y > -50 && y < size.height + 50) {
+      if (y > -50 && y < size.height + 50 && opacity > 0.0) {
         _drawHexagon(canvas, Offset(x, y), hexSize, opacity, animationValue * 0.5 + i); // 降低旋转速度
       }
     }
@@ -1284,15 +1142,17 @@ class FloatingPatternsPainter extends CustomPainter {
       final endX = startX + (random.nextDouble() - 0.5) * 150; // 减小长度
       final y = size.height * progress;
       
-      final opacity = (0.1 + 0.2 * math.sin(animationValue * math.pi + i)) * 0.2; // 降低透明度
+      var opacity = (0.1 + 0.2 * math.sin(animationValue * math.pi + i)) * 0.2; // 可能出现负值
+      opacity = opacity.clamp(0.0, 1.0);
       
       _drawEnergyStream(canvas, Offset(startX, y), Offset(endX, y), opacity);
     }
   }
 
   void _drawHexagon(Canvas canvas, Offset center, double size, double opacity, double rotation) {
+    final double safeOpacity = opacity.clamp(0.0, 1.0);
     final paint = Paint()
-      ..color = const Color(0xFF00FFFF).withOpacity(opacity)
+      ..color = const Color(0xFF00FFFF).withOpacity(safeOpacity)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
@@ -1315,8 +1175,9 @@ class FloatingPatternsPainter extends CustomPainter {
   }
 
   void _drawEnergyStream(Canvas canvas, Offset start, Offset end, double opacity) {
+    final double safeOpacity = opacity.clamp(0.0, 1.0);
     final paint = Paint()
-      ..color = const Color(0xFFFF6B35).withOpacity(opacity)
+      ..color = const Color(0xFFFF6B35).withOpacity(safeOpacity)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
     
@@ -1325,7 +1186,7 @@ class FloatingPatternsPainter extends CustomPainter {
       end: Alignment.centerRight,
       colors: [
         Colors.transparent,
-        const Color(0xFFFF6B35).withOpacity(opacity),
+        const Color(0xFFFF6B35).withOpacity(safeOpacity),
         Colors.transparent,
       ],
       stops: const [0.0, 0.5, 1.0],
