@@ -5,18 +5,18 @@ import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const DailyQuoteApp());
+  runApp(const ArknightsApp());
 }
 
-class DailyQuoteApp extends StatelessWidget {
-  const DailyQuoteApp({super.key});
+class ArknightsApp extends StatelessWidget {
+  const ArknightsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => QuoteProvider(),
       child: MaterialApp(
-        title: '每日金句',
+        title: '今日方舟',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,

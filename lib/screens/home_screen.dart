@@ -193,8 +193,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // 角色信息（左上角）
               if (displayCharacter != null)
                 Positioned(
-                  top: MediaQuery.of(context).padding.top + 16,
-                  left: 0,
+                  top: 40,
+                  left: 20,
                   child: _buildCharacterInfo(displayCharacter),
                 ),
               
@@ -415,76 +415,95 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (character == null) return Container();
 
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.black.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _getRarityColor(character.rarity),
-          width: 3,
+          color: _getRarityColor(character.rarity).withOpacity(0.5),
+          width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 使用职业图片图标
+          // 明日方舟logo
           Container(
-            width: 24,
-            height: 24,
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(right: 12),
             child: Image.asset(
-              _getProfessionIconPath(character.profession),
-              width: 24,
-              height: 24,
+              'assets/logo/logo_laios.png',
+              width: 32,
+              height: 32,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                // 如果图片加载失败，使用备用图标
+                // 如果logo加载失败，显示一个默认图标
                 return Icon(
-                  _getProfessionIcon(character.profession),
+                  Icons.stars,
                   color: _getRarityColor(character.rarity),
-                  size: 24,
+                  size: 32,
                 );
               },
             ),
           ),
-          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                character.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
+              // 第一行：角色名和稀有度星级
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    character.profession,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
+                    character.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _getRarityColor(character.rarity),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${character.rarity}★',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                  // 星级显示
+                  Row(
+                    children: List.generate(int.tryParse(character.rarity) ?? 0, (index) => 
+                      Icon(
+                        Icons.star,
+                        color: _getRarityColor(character.rarity),
+                        size: 16,
                       ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // 第二行：职业图标和职业名称
+              Row(
+                children: [
+                  // 使用职业图片图标
+                  Container(
+                    width: 24,
+                    height: 24,
+                    child: Image.asset(
+                      _getProfessionIconPath(character.profession),
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.contain, // 添加fit属性确保图片完整显示
+                      errorBuilder: (context, error, stackTrace) {
+                        // 如果图片加载失败，使用备用图标
+                        return Icon(
+                          _getProfessionIcon(character.profession),
+                          color: _getRarityColor(character.rarity),
+                          size: 24,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    character.profession,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

@@ -1,5 +1,5 @@
-name: flutter_application_1
-description: "每日金句 - 一个美观的每日励志金句应用"
+name: arknights
+description: "明日方舟 - 干员金句桌面摆件"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -70,6 +70,7 @@ flutter:
     - assets/charpack/
     - assets/bg/
     - assets/operater/
+    - assets/logo/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
