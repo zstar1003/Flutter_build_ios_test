@@ -14,7 +14,7 @@ void main() {
   testWidgets('Daily Quote App smoke test', (WidgetTester tester) async {
     // Build app
     await tester.pumpWidget(const ArknightsApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     // Basic smoke test: ensure MaterialApp is present
     expect(find.byType(MaterialApp), findsOneWidget);
