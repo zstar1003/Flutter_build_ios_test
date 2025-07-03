@@ -230,10 +230,19 @@ class _CharacterSelectorState extends State<CharacterSelector>
                         ),
                       ),
                       child: Center(
-                        child: Icon(
-                          _getProfessionIcon(character.profession),
-                          size: 60,
-                          color: Colors.white.withOpacity(0.8),
+                        child: Image.asset(
+                          _getProfessionIconPath(character.profession),
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // 如果职业图标也加载失败，使用备用图标
+                            return Icon(
+                              _getProfessionIcon(character.profession),
+                              size: 60,
+                              color: Colors.white.withOpacity(0.8),
+                            );
+                          },
                         ),
                       ),
                     );
@@ -324,10 +333,19 @@ class _CharacterSelectorState extends State<CharacterSelector>
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    _getProfessionIcon(character.profession),
-                    size: 20,
-                    color: _getRarityColor(character.rarity),
+                  child: Image.asset(
+                    _getProfessionIconPath(character.profession),
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      // 如果图片加载失败，使用备用图标
+                      return Icon(
+                        _getProfessionIcon(character.profession),
+                        size: 20,
+                        color: _getRarityColor(character.rarity),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -358,6 +376,39 @@ class _CharacterSelectorState extends State<CharacterSelector>
   }
 
   IconData _getProfessionIcon(String profession) {
-      return Icons.person;
+    switch (profession) {
+      case '近卫':
+      case '最强近卫':
+        return Icons.security;
+      case '狙击':
+        return Icons.gps_fixed;
+      case '术师':
+        return Icons.auto_awesome;
+      case '特种':
+        return Icons.stars;
+      case '辅助':
+        return Icons.support_agent;
+      default:
+        return Icons.person;
+    }
+  }
+
+  // 获取职业图标路径
+  String _getProfessionIconPath(String profession) {
+    switch (profession) {
+      case '近卫':
+      case '最强近卫': // 重岳的特殊职业也归类为近卫
+        return 'assets/operater/1.png';
+      case '狙击':
+        return 'assets/operater/2.png';
+      case '术师':
+        return 'assets/operater/3.png';
+      case '特种':
+        return 'assets/operater/4.png';
+      case '辅助':
+        return 'assets/operater/5.png';
+      default:
+        return 'assets/operater/1.png'; // 默认返回近卫图标
+    }
   }
 } 

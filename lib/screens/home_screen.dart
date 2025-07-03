@@ -428,10 +428,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getProfessionIcon(character.profession),
-            color: _getRarityColor(character.rarity),
-            size: 24,
+          // 使用职业图片图标
+          Container(
+            width: 24,
+            height: 24,
+            child: Image.asset(
+              _getProfessionIconPath(character.profession),
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // 如果图片加载失败，使用备用图标
+                return Icon(
+                  _getProfessionIcon(character.profession),
+                  color: _getRarityColor(character.rarity),
+                  size: 24,
+                );
+              },
+            ),
           ),
           const SizedBox(width: 12),
           Column(
@@ -719,9 +733,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // 获取职业图标路径
+  String _getProfessionIconPath(String profession) {
+    switch (profession) {
+      case '近卫':
+      case '最强近卫': // 重岳的特殊职业也归类为近卫
+        return 'assets/operater/1.png';
+      case '狙击':
+        return 'assets/operater/2.png';
+      case '术师':
+        return 'assets/operater/3.png';
+      case '特种':
+        return 'assets/operater/4.png';
+      case '辅助':
+        return 'assets/operater/5.png';
+      default:
+        return 'assets/operater/1.png'; // 默认返回近卫图标
+    }
+  }
+
+  // 保留旧方法作为备用（用于错误处理等）
   IconData _getProfessionIcon(String profession) {
     switch (profession) {
       case '近卫':
+      case '最强近卫':
         return Icons.security;
       case '狙击':
         return Icons.gps_fixed;
