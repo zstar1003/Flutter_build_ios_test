@@ -41,7 +41,7 @@ class ArknightsApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => QuoteProvider(),
       child: MaterialApp(
-        title: '今日方舟',
+        title: '羲和',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
