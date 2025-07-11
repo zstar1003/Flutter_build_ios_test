@@ -4,50 +4,98 @@ import 'package:http/http.dart' as http;
 import '../models/quote.dart';
 
 class QuoteService {
-  static const String _baseUrl = 'https://api.quotable.io';
-  static final Random _random = Random();
-  
-  static final List<Map<String, String>> _quotes = [
-    {'text': '路漫漫其修远兮，吾将上下而求索。', 'author': '屈原', 'source': '《离骚》'},
-    {'text': '亦余心之所善兮，虽九死其犹未悔。', 'author': '屈原', 'source': '《离骚》'},
-    {'text': '君不见黄河之水天上来，奔流到海不复回。', 'author': '李白', 'source': '《将进酒》'},
-    {'text': '天生我材必有用，千金散尽还复来。', 'author': '李白', 'source': '《将进酒》'},
-    {'text': '长风破浪会有时，直挂云帆济沧海。', 'author': '李白', 'source': '《行路难·其一》'},
-    {'text': '国破山河在，城春草木深。', 'author': '杜甫', 'source': '《春望》'},
-    {'text': '安得广厦千万间，大庇天下寒士俱欢颜。', 'author': '杜甫', 'source': '《茅屋为秋风所破歌》'},
-    {'text': '在天愿作比翼鸟，在地愿为连理枝。', 'author': '白居易', 'source': '《长恨歌》'},
-    {'text': '野火烧不尽，春风吹又生。', 'author': '白居易', 'source': '《赋得古原草送别》'},
-    {'text': '但愿人长久，千里共婵娟。', 'author': '苏轼', 'source': '《水调歌头·明月几时有》'},
-    {'text': '不识庐山真面目，只缘身在此山中。', 'author': '苏轼', 'source': '《题西林壁》'},
-    {'text': '寻寻觅觅，冷冷清清，凄凄惨惨戚戚。', 'author': '李清照', 'source': '《声声慢·寻寻觅觅》'},
-    {'text': '生当作人杰，死亦为鬼雄。', 'author': '李清照', 'source': '《夏日绝句》'},
-    {'text': '采菊东篱下，悠然见南山。', 'author': '陶渊明', 'source': '《饮酒·其五》'},
-    {'text': '大漠孤烟直，长河落日圆。', 'author': '王维', 'source': '《使至塞上》'},
-    {'text': '山重水复疑无路，柳暗花明又一村。', 'author': '陆游', 'source': '《游山西村》'},
-    {'text': '夜阑卧听风吹雨，铁马冰河入梦来。', 'author': '陆游', 'source': '《十一月四日风雨大作》'},
-  ];
+  final Random _random = Random();
 
-  Future<Quote> fetchRandomQuote() async {
-    final response = await http.get(Uri.parse('$_baseUrl/random'));
-    if (response.statusCode == 200) {
-      return Quote.fromJson(jsonDecode(response.body));
-    } else {
-      // Fallback to local quotes if API fails
-      return _getRandomLocalQuote();
+  Future<Quote> fetchQuoteFromNetwork() async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://hub.saintic.com/openservice/sentence/'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final quoteData = responseData['data'];
+
+        if (quoteData != null && responseData['success'] == true) {
+          return Quote(
+            text: quoteData['sentence'] ?? '未知诗句',
+            author: quoteData['author'] ?? '佚名',
+            source: quoteData['name'] ?? '',
+          );
+        } else {
+          throw Exception('Failed to parse quote from network response');
+        }
+      } else {
+        throw Exception('Failed to load quote from network');
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
-  static Future<Quote> getRandomQuote() async {
-    await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
-    return _getRandomLocalQuote();
-  }
+  final List<Map<String, String>> _localQuotes = [
+    {
+      "text": "山有木兮木有枝，心悦君兮君不知。",
+      "author": "佚名",
+      "source": "《越人歌》"
+    },
+    {
+      "text": "人生若只如初见，何事秋风悲画扇。",
+      "author": "纳兰性德",
+      "source": "《木兰词·拟古决绝词柬友》"
+    },
+    {
+      "text": "十年生死两茫茫，不思量，自难忘。",
+      "author": "苏轼",
+      "source": "《江城子·乙卯正月二十日夜记梦》"
+    },
+    {
+      "text": "曾经沧海难为水，除却巫山不是云。",
+      "author": "元稹",
+      "source": "《离思五首·其四》"
+    },
+    {
+      "text": "玲珑骰子安红豆，入骨相思知不知。",
+      "author": "温庭筠",
+      "source": "《南歌子词二首 / 新添声杨柳枝词》"
+    },
+    {
+      "text": "身无彩凤双飞翼，心有灵犀一点通。",
+      "author": "李商隐",
+      "source": "《无题·昨夜星辰昨夜风》"
+    },
+    {
+      "text": "此情可待成追忆，只是当时已惘然。",
+      "author": "李商隐",
+      "source": "《锦瑟》"
+    },
+    {
+      "text": "衣带渐宽终不悔，为伊消得人憔悴。",
+      "author": "柳永",
+      "source": "《蝶恋花·伫倚危楼风细细》"
+    },
+    {
+      "text": "众里寻他千百度，蓦然回首，那人却在，灯火阑珊处。",
+      "author": "辛弃疾",
+      "source": "《青玉案·元夕》"
+    },
+    {
+      "text": "愿得一心人，白头不相离。",
+      "author": "卓文君",
+      "source": "《白头吟》"
+    }
+  ];
 
-  static Quote _getRandomLocalQuote() {
-    final quoteData = _quotes[_random.nextInt(_quotes.length)];
+  Quote getRandomLocalQuote() {
+    final quoteData = _localQuotes[_random.nextInt(_localQuotes.length)];
     return Quote(
       text: quoteData['text']!,
       author: quoteData['author']!,
       source: quoteData['source']!,
     );
+  }
+
+  String getNextBackground() {
+    return 'assets/bg/${_random.nextInt(10) + 1}.jpg';
   }
 } 
