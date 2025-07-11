@@ -6,84 +6,34 @@ import '../models/quote.dart';
 import '../services/quote_service.dart';
 
 class QuoteProvider extends ChangeNotifier {
-  final QuoteService _quoteService = QuoteService();
-  
   Quote? _currentQuote;
-  Quote? _dailyQuote;
+  String? _backgroundImage;
   List<Quote> _favorites = [];
-  List<Quote> _recentQuotes = [];
-  List<Character> _characters = [];
-  Character? _currentCharacter;
   
   bool _isLoading = false;
   String? _error;
+  final Random _random = Random();
 
   // Getters
   Quote? get currentQuote => _currentQuote;
-  Quote? get dailyQuote => _dailyQuote;
+  String? get backgroundImage => _backgroundImage;
   List<Quote> get favorites => _favorites;
-  List<Quote> get recentQuotes => _recentQuotes;
-  List<Character> get characters => _characters;
-  Character? get currentCharacter => _currentCharacter;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   QuoteProvider() {
     _loadFavorites();
-    _loadRecentQuotes();
-    _loadCharacters();
-    loadDailyQuote();
+    fetchQuote();
   }
 
-  // 加载每日金句和角色
-  Future<void> loadDailyQuote() async {
+  Future<void> fetchQuote() async {
     _setLoading(true);
     _setError(null);
     
     try {
-      final character = QuoteService.getDailyCharacter();
-      final quoteText = QuoteService.getDailyQuote();
-      
-      final quote = Quote(
-        text: quoteText,
-        author: character.name,
-        character: character,
-        tags: ['每日', '明日方舟', character.profession],
-        date: DateTime.now(),
-      );
-      
-      _dailyQuote = quote;
-      _currentQuote = quote;
-      _currentCharacter = character;
-      _addToRecentQuotes(quote);
-      notifyListeners();
-    } catch (e) {
-      _setError('加载每日金句失败：${e.toString()}');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // 获取随机角色金句
-  Future<void> getRandomCharacterQuote() async {
-    _setLoading(true);
-    _setError(null);
-    
-    try {
-      final character = QuoteService.getRandomCharacter();
-      final quoteText = character.quotes[Random().nextInt(character.quotes.length)];
-      
-      final quote = Quote(
-        text: quoteText,
-        author: character.name,
-        character: character,
-        tags: ['随机', '明日方舟', character.profession],
-        date: DateTime.now(),
-      );
-      
-      _currentQuote = quote;
-      _currentCharacter = character;
-      _addToRecentQuotes(quote);
+      final quote = await QuoteService.getRandomQuote();
+      _currentQuote = quote.copyWith(isFavorite: isFavorite(quote));
+      _backgroundImage = 'assets/bg/${_random.nextInt(10) + 1}.jpg';
       notifyListeners();
     } catch (e) {
       _setError('获取金句失败：${e.toString()}');
@@ -92,52 +42,6 @@ class QuoteProvider extends ChangeNotifier {
     }
   }
 
-  // 获取特定角色的金句
-  Future<void> getCharacterQuote(String characterName) async {
-    _setLoading(true);
-    _setError(null);
-    
-    try {
-      final quote = await _quoteService.getCharacterQuote(characterName);
-      _currentQuote = quote;
-      _currentCharacter = quote.character;
-      _addToRecentQuotes(quote);
-      notifyListeners();
-    } catch (e) {
-      _setError('获取角色金句失败：${e.toString()}');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // 设置当前角色
-  void setCharacter(Character character) {
-    // 清除错误状态
-    _error = null;
-    _isLoading = false;
-    
-    // 更新角色
-    _currentCharacter = character;
-    
-    // 获取该角色的随机金句
-    final quoteText = character.quotes[Random().nextInt(character.quotes.length)];
-    final quote = Quote(
-      text: quoteText,
-      author: character.name,
-      character: character,
-      tags: ['角色', '明日方舟', character.profession],
-      date: DateTime.now(),
-    );
-    
-    // 更新当前金句
-    _currentQuote = quote;
-    _addToRecentQuotes(quote);
-    
-    // 通知监听器
-    notifyListeners();
-  }
-
-  // 切换收藏状态
   Future<void> toggleFavorite(Quote quote) async {
     final index = _favorites.indexWhere((fav) => fav.text == quote.text && fav.author == quote.author);
     
@@ -149,7 +53,6 @@ class QuoteProvider extends ChangeNotifier {
     
     await _saveFavorites();
     
-    // 更新当前金句的收藏状态
     if (_currentQuote != null && 
         _currentQuote!.text == quote.text && 
         _currentQuote!.author == quote.author) {
@@ -159,37 +62,10 @@ class QuoteProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 检查是否已收藏
   bool isFavorite(Quote quote) {
     return _favorites.any((fav) => fav.text == quote.text && fav.author == quote.author);
   }
 
-  // 删除收藏
-  Future<void> removeFavorite(Quote quote) async {
-    _favorites.removeWhere((fav) => fav.text == quote.text && fav.author == quote.author);
-    await _saveFavorites();
-    notifyListeners();
-  }
-
-  // 设置当前金句
-  void setCurrentQuote(Quote quote) {
-    _currentQuote = quote.copyWith(isFavorite: isFavorite(quote));
-    _currentCharacter = quote.character;
-    _addToRecentQuotes(quote);
-    notifyListeners();
-  }
-
-  // 搜索角色
-  List<Character> searchCharacters(String query) {
-    return _quoteService.searchCharacters(query);
-  }
-
-  // 获取所有职业
-  List<String> getProfessions() {
-    return _quoteService.getProfessions();
-  }
-
-  // 私有方法
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -200,21 +76,6 @@ class QuoteProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _addToRecentQuotes(Quote quote) {
-    _recentQuotes.removeWhere((recent) => recent.text == quote.text && recent.author == quote.author);
-    _recentQuotes.insert(0, quote);
-    if (_recentQuotes.length > 10) {
-      _recentQuotes = _recentQuotes.take(10).toList();
-    }
-    _saveRecentQuotes();
-  }
-
-  void _loadCharacters() {
-    _characters = QuoteService.getAllCharacters();
-    notifyListeners();
-  }
-
-  // 本地存储方法
   Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final favoritesJson = _favorites.map((quote) => quote.toJson()).toList();
@@ -233,30 +94,5 @@ class QuoteProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('加载收藏失败：$e');
     }
-  }
-
-  Future<void> _saveRecentQuotes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final recentJson = _recentQuotes.map((quote) => quote.toJson()).toList();
-    await prefs.setString('recent_quotes', json.encode(recentJson));
-  }
-
-  Future<void> _loadRecentQuotes() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final recentString = prefs.getString('recent_quotes');
-      if (recentString != null) {
-        final recentJson = json.decode(recentString) as List;
-        _recentQuotes = recentJson.map((json) => Quote.fromJson(json)).toList();
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('加载历史记录失败：$e');
-    }
-  }
-
-  // 保持兼容性的方法
-  Future<void> getRandomQuote() async {
-    return getRandomCharacterQuote();
   }
 } 
