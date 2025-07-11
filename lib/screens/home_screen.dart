@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
           
           final quote = provider.currentQuote;
           final backgroundImage = provider.backgroundImage;
+          final screenWidth = MediaQuery.of(context).size.width;
 
           return GestureDetector(
             onTap: _manualRefresh,
@@ -103,11 +104,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Spacer(flex: 2),
+                          Container(
+                            width: screenWidth * 0.85,
+                            constraints: const BoxConstraints(
+                              maxWidth: 550,
+                            ),
+                            child: _TimeBar(nextRefreshTime: _nextRefreshTime)
+                          ),
+                          const SizedBox(height: 30),
                           QuoteDisplay(quote: quote),
-                          const Spacer(flex: 2),
-                          _TimeBar(nextRefreshTime: _nextRefreshTime),
-                          const Spacer(flex: 1),
+                          const SizedBox(height: 20),
+                          _TimelineIndicator(nextRefreshTime: _nextRefreshTime),
+                          const SizedBox(height: 80), // Push content up
                         ],
                       ),
                     ),
@@ -129,7 +137,7 @@ class _TimeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateStr = '${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateStr = '${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日';
     final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     
     final timeUntilRefresh = nextRefreshTime.difference(now);
@@ -137,31 +145,63 @@ class _TimeBar extends StatelessWidget {
     final refreshText = minutesUntilRefresh > 0 ? '$minutesUntilRefresh 分钟后刷新' : '即将刷新...';
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withOpacity(0.4),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          const Icon(Icons.access_time, color: Colors.white70, size: 16),
+          const Icon(Icons.access_time, color: Colors.white70, size: 20),
           const SizedBox(width: 8),
           Text(
             timeStr,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 12),
           Text(
             dateStr,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(width: 12),
           Text(
             refreshText,
-            style: const TextStyle(color: Colors.cyanAccent, fontSize: 12),
+            style: const TextStyle(color: Colors.cyanAccent, fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TimelineIndicator extends StatelessWidget {
+  final DateTime nextRefreshTime;
+
+  const _TimelineIndicator({required this.nextRefreshTime});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final now = DateTime.now();
+    final timeUntilRefresh = nextRefreshTime.difference(now);
+    const totalDuration = Duration(hours: 1);
+    
+    final double progress = (totalDuration.inSeconds - timeUntilRefresh.inSeconds) / totalDuration.inSeconds;
+
+    return Container(
+      width: screenWidth * 0.85,
+      constraints: const BoxConstraints(
+        maxWidth: 550,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: LinearProgressIndicator(
+          value: progress.clamp(0.0, 1.0),
+          backgroundColor: Colors.white.withOpacity(0.2),
+          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
+          minHeight: 4,
+        ),
       ),
     );
   }

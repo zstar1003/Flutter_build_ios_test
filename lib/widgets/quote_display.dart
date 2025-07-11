@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/quote.dart';
 
 class QuoteDisplay extends StatelessWidget {
@@ -22,27 +23,28 @@ class QuoteDisplay extends StatelessWidget {
       constraints: const BoxConstraints(
         maxWidth: 550,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFFC06C84).withOpacity(0.75), // A warm, deep pink
-            const Color(0xFF6C5B7B).withOpacity(0.75), // A warm, deep purple
-            const Color(0xFF355C7D).withOpacity(0.85), // A deep blue
+            const Color(0xFF4B3832).withOpacity(0.85), // Coffee Brown
+            const Color(0xFF854442).withOpacity(0.88), // Russet
+            const Color(0xFFBE9B7B).withOpacity(0.85), // Tan
           ],
+          stops: const [0.0, 0.5, 1.0],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.15),
-          width: 1,
+          color: Colors.white.withOpacity(0.1),
+          width: 0.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -53,16 +55,17 @@ class QuoteDisplay extends StatelessWidget {
             child: SingleChildScrollView(
               child: Text(
                 quote!.text,
-                style: const TextStyle(
+                style: TextStyle(
+                  fontFamily: 'Noto Serif SC',
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w500,
-                  height: 1.7,
-                  letterSpacing: 0.8,
+                  height: 1.8,
+                  letterSpacing: 1.2,
                   shadows: [
-                    Shadow(
-                      blurRadius: 8.0,
-                      color: Colors.black45,
+                    const Shadow(
+                      blurRadius: 10.0,
+                      color: Colors.black54,
                       offset: Offset(2.0, 2.0),
                     ),
                   ],
@@ -73,26 +76,32 @@ class QuoteDisplay extends StatelessWidget {
           ),
           
           if (quote!.author.isNotEmpty) ...[
-            const SizedBox(height: 30),
-            Container(
-              width: 50,
-              height: 1.5,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
             const SizedBox(height: 20),
-            Text(
-              '— ${quote!.author}  ${quote!.source}',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.center,
-              softWrap: true,
-            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF854442), // Russet color to mimic a seal
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '${quote!.author}  ${quote!.source}',
+                  style: TextStyle(
+                    fontFamily: 'Noto Sans SC',
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                  softWrap: true,
+                ),
+              ],
+            )
           ]
         ],
       ),
